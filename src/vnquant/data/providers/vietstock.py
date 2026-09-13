@@ -44,7 +44,7 @@ class VietstockDataFeedContract:
             "parameters": {"index_code", "symbol", "start", "end"},
             "response_record_paths": {"current_index_members", "daily_history"},
             "schema_mapping": {"symbol", "trading_date", "open", "high", "low", "close", "volume"},
-            "units": {"price_multiplier"},
+            "units": {"price_multiplier", "volume_multiplier", "value_multiplier"},
         }
         for name, keys in requirements.items():
             value = getattr(self, name)
@@ -54,6 +54,19 @@ class VietstockDataFeedContract:
         if missing:
             raise ProviderConfigurationError(
                 "incomplete authorized Vietstock DataFeed contract: " + ", ".join(missing)
+            )
+        try:
+            multipliers = tuple(
+                float(self.units[name])
+                for name in ("price_multiplier", "volume_multiplier", "value_multiplier")
+            )
+        except (TypeError, ValueError) as exc:
+            raise ProviderConfigurationError(
+                "Vietstock unit multipliers must be numeric"
+            ) from exc
+        if any(value <= 0 for value in multipliers):
+            raise ProviderConfigurationError(
+                "Vietstock unit multipliers must be positive"
             )
 
 
@@ -123,4 +136,6 @@ class VietstockDataFeedProvider(MarketDataProvider):
             field_map=self.contract.schema_mapping,
             provider_id=self.provider_id,
             price_multiplier=float(self.contract.units["price_multiplier"]),
+            volume_multiplier=float(self.contract.units["volume_multiplier"]),
+            value_multiplier=float(self.contract.units["value_multiplier"]),
         )

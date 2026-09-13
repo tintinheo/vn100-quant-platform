@@ -101,18 +101,34 @@ def test_authorized_vietstock_http_success_still_does_not_admit_provider():
             "symbol": "ticker", "trading_date": "date", "open": "o", "high": "h",
             "low": "l", "close": "c", "volume": "v",
         },
-        units={"price_multiplier": 1},
+        units={"price_multiplier": 1, "volume_multiplier": 1, "value_multiplier": 1},
         revision_policy="vendor contract revision clause",
         rate_limits="vendor contract quota",
         usage_rights="authorized for internal research",
     )
-    provider = VietstockDataFeedProvider(
-        contract,
-        transport=lambda **kwargs: {"result": {"rows": [{"ticker": "VNM"}]}},
-    )
+    def transport(**kwargs):
+        if kwargs["path"] == "/members":
+            rows = [{"ticker": "VNM"}]
+        else:
+            rows = [
+                {
+                    "date": "2026-09-09",
+                    "o": 10,
+                    "h": 11,
+                    "l": 9,
+                    "c": 10.5,
+                    "v": 1_000,
+                }
+            ]
+        return {"result": {"rows": rows}}
+
+    provider = VietstockDataFeedProvider(contract, transport=transport)
     registry = default_provider_registry()
 
     assert provider.current_index_members() == ["VNM"]
+    history = provider.daily_history("VNM", date(2026, 9, 9), date(2026, 9, 9))
+    assert history.iloc[0]["symbol"] == "VNM"
+    assert history.iloc[0]["close"] == 10.5
     assert registry.registration("vietstock_datafeed").state is ProviderState.CANDIDATE
     assert registry.admitted_provider_ids("current_index_members") == ()
 

@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.2 — 2026-09-13**
+**Current internal revision:** **1.1 — 2026-09-13**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -12,8 +12,7 @@
 | Revision | Date | Change |
 |---|---|---|
 | **1.0** | **2026-09-13** | **Verified DNSE documented OpenAPI/SDK; retained Vietstock as contract-gated candidate; CafeF as explicit reference source; implemented/offline-tested multi-source feed module.** |
-| **1.1** | **2026-09-13** | **Integrated the three adapters into the stable `vnquant` package with non-admitted default registry states and offline admission-separation tests; provider evidence is unchanged.** |
-| **1.2** | **2026-09-13** | **Hardened offline implementation mechanics: explicit admission evidence, contract-mapped Vietstock record paths, and dependency-free CafeF HTML parsing. Provider evidence and live status are unchanged.** |
+| **1.1** | **2026-09-13** | **Hardened offline implementation mechanics: explicit admission evidence, contract-mapped Vietstock record paths, and dependency-free CafeF HTML parsing. Provider evidence and live status are unchanged.** |
 
 ## 1. Kết luận
 

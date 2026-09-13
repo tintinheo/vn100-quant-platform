@@ -47,6 +47,8 @@ class DNSEProvider(MarketDataProvider):
         index_name: str = "VN100",  # [GUESS]
         field_map: Mapping[str, str] = DEFAULT_DNSE_FIELD_MAP,  # [GUESS]
         price_multiplier: float = 1.0,  # [GUESS] pending live unit verification
+        volume_multiplier: float = 1.0,  # [GUESS] pending live unit verification
+        value_multiplier: float = 1.0,  # [GUESS] pending live unit verification
     ) -> None:
         self._client = client
         self._client_factory = client_factory
@@ -54,6 +56,8 @@ class DNSEProvider(MarketDataProvider):
         self.index_name = index_name
         self.field_map = dict(field_map)
         self.price_multiplier = price_multiplier
+        self.volume_multiplier = volume_multiplier
+        self.value_multiplier = value_multiplier
 
     @property
     def client(self) -> DNSEMarketDataClient:
@@ -110,4 +114,6 @@ class DNSEProvider(MarketDataProvider):
             field_map=self.field_map,
             provider_id=self.provider_id,
             price_multiplier=self.price_multiplier,
+            volume_multiplier=self.volume_multiplier,
+            value_multiplier=self.value_multiplier,
         )

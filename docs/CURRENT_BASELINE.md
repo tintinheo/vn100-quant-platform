@@ -42,5 +42,4 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | 3.3 | 2026-09-10 | SSI removed from active architecture. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run / sync-if-stale data ingestion. |
 | **3.5** | **2026-09-13** | **DNSE-first provider research + implemented/offline-tested multi-source scanner.** |
-| **3.5 (integration update)** | **2026-09-13** | **Stable main-package providers registered in non-admitted states; no live-validation or admission status change.** |
-| **3.5 (provider hardening)** | **2026-09-13** | **Admission now requires explicit doctor, cross-validation and approval evidence; data validation status is unchanged.** |
+| **3.5 (provider integration)** | **2026-09-13** | **Stable providers integrated in non-admitted states; admission requires explicit doctor, cross-validation and approval evidence. No live-validation status change.** |

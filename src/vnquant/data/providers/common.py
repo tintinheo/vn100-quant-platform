@@ -23,8 +23,13 @@ def canonical_frame(
     field_map: Mapping[str, str],
     provider_id: str,
     price_multiplier: float,
+    volume_multiplier: float,
+    value_multiplier: float,
 ) -> pd.DataFrame:
     """Map explicitly named provider fields into the existing canonical frame."""
+    multipliers = (price_multiplier, volume_multiplier, value_multiplier)
+    if any(not isinstance(value, (int, float)) or value <= 0 for value in multipliers):
+        raise ProviderConfigurationError("unit multipliers must be positive numbers")
     required = {"trading_date", "open", "high", "low", "close", "volume"}
     missing_mapping = required.difference(field_map)
     if missing_mapping:
@@ -53,11 +58,15 @@ def canonical_frame(
     frame["trading_date"] = pd.to_datetime(frame["trading_date"], errors="raise").dt.date
     for column in ("open", "high", "low", "close"):
         frame[column] = pd.to_numeric(frame[column], errors="raise") * price_multiplier
-    frame["volume"] = pd.to_numeric(frame["volume"], errors="raise")
+    frame["volume"] = (
+        pd.to_numeric(frame["volume"], errors="raise") * volume_multiplier
+    )
     if "value" not in frame:
         frame["value"] = pd.NA
     else:
-        frame["value"] = pd.to_numeric(frame["value"], errors="raise")
+        frame["value"] = (
+            pd.to_numeric(frame["value"], errors="raise") * value_multiplier
+        )
     return frame[CANONICAL_COLUMNS]
 
 
