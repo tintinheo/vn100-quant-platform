@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +8,7 @@ import pytest
 
 from vnquant.data.base import DataMode, MarketDataProvider
 from vnquant.data.provider_registry import (
+    AdmissionEvidence,
     NO_ADMITTED_PROVIDER,
     NoAdmittedProvider,
     ProviderNotAllowed,
@@ -17,6 +18,13 @@ from vnquant.data.provider_registry import (
 )
 from vnquant.jobs.bootstrap import run as run_bootstrap
 from vnquant.jobs.doctor import run as run_doctor
+
+
+ADMISSION_EVIDENCE = AdmissionEvidence(
+    doctor_passed_at=datetime(2026, 9, 1, tzinfo=timezone.utc),
+    cross_validated_at=datetime(2026, 9, 2, tzinfo=timezone.utc),
+    approval_reference="test-review-only",
+)
 
 
 class StubProvider(MarketDataProvider):
@@ -42,6 +50,7 @@ def test_ssi_cannot_become_active_accidentally(provider_id):
             StubProvider(provider_id),
             state=ProviderState.ADMITTED,
             documented_access=True,
+            admission_evidence=ADMISSION_EVIDENCE,
         )
 
 
@@ -72,6 +81,7 @@ def test_synthetic_provider_cannot_masquerade_as_real_data():
         provider,
         state=ProviderState.ADMITTED,
         documented_access=True,
+        admission_evidence=ADMISSION_EVIDENCE,
     )
 
     with pytest.raises(NoAdmittedProvider, match=NO_ADMITTED_PROVIDER):
@@ -94,6 +104,7 @@ def test_provider_selection_is_explicit():
         provider,
         state=ProviderState.ADMITTED,
         documented_access=True,
+        admission_evidence=ADMISSION_EVIDENCE,
     )
 
     with pytest.raises(ProviderSelectionRequired, match="explicitly"):

@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.0 — 2026-09-13**  
+**Current internal revision:** **1.2 — 2026-09-13**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -12,6 +12,8 @@
 | Revision | Date | Change |
 |---|---|---|
 | **1.0** | **2026-09-13** | **Verified DNSE documented OpenAPI/SDK; retained Vietstock as contract-gated candidate; CafeF as explicit reference source; implemented/offline-tested multi-source feed module.** |
+| **1.1** | **2026-09-13** | **Integrated the three adapters into the stable `vnquant` package with non-admitted default registry states and offline admission-separation tests; provider evidence is unchanged.** |
+| **1.2** | **2026-09-13** | **Hardened offline implementation mechanics: explicit admission evidence, contract-mapped Vietstock record paths, and dependency-free CafeF HTML parsing. Provider evidence and live status are unchanged.** |
 
 ## 1. Kết luận
 
@@ -77,6 +79,10 @@ pip install -e . --no-deps --no-build-isolation   PASS
 ```
 
 No live external provider call was executed in the build environment. Therefore status is **IMPLEMENTED + TESTED_OFFLINE**, not `VALIDATED_REAL_DATA`.
+
+## 4.1. Stable-package integration
+
+The providers are now also implemented under `src/vnquant/data/providers/` and connected to `provider_registry.py`. DNSE exposes only read-only market-data operations; Vietstock validates every authorized-contract field before I/O; CafeF is disabled/reference-only. All default registrations remain non-admitted, and successful fixture/HTTP mechanics cannot mutate admission state. Status remains **OFFLINE_TESTED / NOT LIVE VALIDATED / NOT ADMITTED**.
 
 ## 5. `[GUESS]` operational defaults
 

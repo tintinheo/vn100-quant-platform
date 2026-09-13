@@ -18,7 +18,7 @@
 - Licensed secondary/alternative candidate: **Vietstock DataFeed `[GUESS]`** — generic contract-gated adapter implemented; live contract/access pending.
 - CafeF: **reference / explicit opt-in validation**, not a silent production fallback or authoritative VN100-membership source.
 - Executable data subsystem: `vn100_multisource_feed_v1` — **IMPLEMENTED + TESTED_OFFLINE, 10/10 PASS**.
-- Main trading/analytics app: legacy v3.1 remains to be migrated/integrated with the new module.
+- Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
 - Real-data validation: **NOT YET PERFORMED**.
 
 ## Mandatory governance
@@ -42,3 +42,5 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | 3.3 | 2026-09-10 | SSI removed from active architecture. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run / sync-if-stale data ingestion. |
 | **3.5** | **2026-09-13** | **DNSE-first provider research + implemented/offline-tested multi-source scanner.** |
+| **3.5 (integration update)** | **2026-09-13** | **Stable main-package providers registered in non-admitted states; no live-validation or admission status change.** |
+| **3.5 (provider hardening)** | **2026-09-13** | **Admission now requires explicit doctor, cross-validation and approval evidence; data validation status is unchanged.** |

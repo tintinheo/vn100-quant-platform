@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 from .base import DataMode, MarketDataProvider
@@ -29,9 +30,31 @@ class ProviderNotAllowed(ProviderRegistryError):
 
 class ProviderState(str, Enum):
     CANDIDATE = "CANDIDATE"
+    DOCTOR_PASSED = "DOCTOR_PASSED"
+    CROSS_VALIDATED = "CROSS_VALIDATED"
     ADMITTED = "ADMITTED"
     RESEARCH_ONLY = "RESEARCH_ONLY"
     RETIRED = "RETIRED"
+
+
+@dataclass(frozen=True)
+class AdmissionEvidence:
+    """Human-reviewed evidence required for the explicit admission decision."""
+
+    doctor_passed_at: datetime
+    cross_validated_at: datetime
+    approval_reference: str
+
+    def __post_init__(self) -> None:
+        if (
+            self.doctor_passed_at.utcoffset() is None
+            or self.cross_validated_at.utcoffset() is None
+        ):
+            raise ValueError("admission evidence timestamps must be timezone-aware")
+        if self.cross_validated_at < self.doctor_passed_at:
+            raise ValueError("cross-validation cannot precede the provider doctor")
+        if not self.approval_reference.strip():
+            raise ValueError("approval_reference is required")
 
 
 @dataclass(frozen=True)
@@ -39,6 +62,7 @@ class ProviderRegistration:
     provider: MarketDataProvider
     state: ProviderState
     documented_access: bool
+    admission_evidence: AdmissionEvidence | None = None
 
 
 class ProviderRegistry:
@@ -66,16 +90,25 @@ class ProviderRegistry:
         *,
         state: ProviderState = ProviderState.CANDIDATE,
         documented_access: bool = False,
+        admission_evidence: AdmissionEvidence | None = None,
     ) -> None:
         provider_id = self._provider_id(provider)
         if provider_id in self._RETIRED_PROVIDER_IDS or provider_id.startswith("ssi_"):
             raise ProviderNotAllowed(f"retired provider {provider_id!r} cannot be registered")
-        if state is ProviderState.ADMITTED and not documented_access:
-            raise ProviderNotAllowed("an undocumented provider cannot be admitted")
+        if state is ProviderState.ADMITTED:
+            if not documented_access:
+                raise ProviderNotAllowed("an undocumented provider cannot be admitted")
+            if admission_evidence is None:
+                raise ProviderNotAllowed(
+                    "ADMITTED requires doctor, cross-validation, and approval evidence"
+                )
+        elif admission_evidence is not None:
+            raise ProviderNotAllowed("admission evidence is only accepted for ADMITTED state")
         self._registrations[provider_id] = ProviderRegistration(
             provider=provider,
             state=state,
             documented_access=documented_access,
+            admission_evidence=admission_evidence,
         )
 
     def admitted_provider_ids(self, capability: str) -> tuple[str, ...]:
@@ -87,6 +120,14 @@ class ProviderRegistry:
             and registration.provider.data_mode is DataMode.REAL
             and capability in registration.provider.capabilities
         )
+
+    def registration(self, provider_id: str) -> ProviderRegistration:
+        """Expose immutable governance metadata without deriving state from I/O."""
+        normalized = provider_id.strip().lower()
+        registration = self._registrations.get(normalized)
+        if registration is None:
+            raise ProviderNotAllowed(f"provider {normalized!r} is not registered")
+        return registration
 
     def select(
         self,
@@ -126,5 +167,19 @@ class ProviderRegistry:
 
 
 def default_provider_registry() -> ProviderRegistry:
-    """Return the v3.3 registry; no automated provider is currently admitted."""
-    return ProviderRegistry()
+    """Return implemented providers in policy-safe, non-admitted states."""
+    from .providers import CafeFReferenceProvider, DNSEProvider, VietstockDataFeedProvider
+
+    registry = ProviderRegistry()
+    registry.register(DNSEProvider(), state=ProviderState.CANDIDATE, documented_access=True)
+    registry.register(
+        VietstockDataFeedProvider(),
+        state=ProviderState.CANDIDATE,
+        documented_access=False,
+    )
+    registry.register(
+        CafeFReferenceProvider(),
+        state=ProviderState.RESEARCH_ONLY,
+        documented_access=False,
+    )
+    return registry

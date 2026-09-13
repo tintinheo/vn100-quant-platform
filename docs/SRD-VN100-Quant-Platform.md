@@ -22,6 +22,8 @@
 | 3.3 | 2026-09-10 | SSI FastConnect removed from active architecture; SSI-Free baseline. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run requirement: sync-if-stale, cache, fail-safe; CSV/XLSX demoted to fallback/debug. |
 | **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. No live-data validation claim.** |
+| **3.5.1** | **2026-09-13** | **Integrated DNSE, contract-gated Vietstock, and disabled/reference-only CafeF under `src/vnquant/data/providers/`; default registry is non-admitted and admission is not derived from HTTP success.** |
+| **3.5.2** | **2026-09-13** | **Provider registry now models DOCTOR_PASSED and CROSS_VALIDATED and requires immutable admission evidence; Vietstock record envelopes are contract-mapped and CafeF HTML uses a standard-library fail-closed parser.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

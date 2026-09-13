@@ -22,6 +22,8 @@
 | 3.3 | 2026-09-10 | Loại SSI FastConnect khỏi kiến trúc đang hoạt động; chuyển sang SSI-Free. |
 | 3.4 | 2026-09-13 | Yêu cầu auto-refresh khi chạy app: sync-if-stale, cache, fail-safe; CSV/XLSX chỉ còn fallback/debug. |
 | **3.5** | **2026-09-13** | **DNSE-first auto-sync: DNSE read-only adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. Chưa claim live-data validation.** |
+| **3.5.1** | **2026-09-13** | **Tích hợp provider implementations ổn định tại `src/vnquant/data/providers/` và đăng ký mặc định ở trạng thái chưa admitted; HTTP success không đồng nghĩa Source Admission. Chưa claim live-data validation.** |
+| **3.5.2** | **2026-09-13** | **Siết Source Admission bằng evidence bắt buộc cho doctor/cross-validation/approval, hoàn chỉnh Vietstock response-path contract được ủy quyền, và loại bỏ phụ thuộc parser không rõ ràng của CafeF. Trạng thái vẫn chỉ offline.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
