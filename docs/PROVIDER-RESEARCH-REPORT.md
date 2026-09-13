@@ -1,0 +1,102 @@
+# Provider Research Report — VN100 Data Sources
+
+**File:** `PROVIDER-RESEARCH-REPORT.md`  
+**Current internal revision:** **1.0 — 2026-09-13**  
+**Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
+**Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
+
+## Change Log
+
+**Filename policy:** stable filename; append future provider research revisions here instead of creating a new filename.
+
+| Revision | Date | Change |
+|---|---|---|
+| **1.0** | **2026-09-13** | **Verified DNSE documented OpenAPI/SDK; retained Vietstock as contract-gated candidate; CafeF as explicit reference source; implemented/offline-tested multi-source feed module.** |
+
+## 1. Kết luận
+
+### DNSE — primary automated market-data candidate `[GUESS]`
+
+**Verified:**
+
+- DNSE có OpenAPI chính thức và tài liệu Market Data API.
+- Tài liệu công khai xác nhận dữ liệu OHLC, instrument metadata, historical trades, bid/ask, foreign-investor data, working dates/session và market indices.
+- Endpoint OHLC được tài liệu hóa là `GET /price/ohlc`.
+- Endpoint instrument list được tài liệu hóa là `GET /instruments`.
+- Official Python SDK repo có `DNSEClient`, `get_instruments(..., index_name=...)` và `get_ohlc(...)` examples.
+- WebSocket SDK có OHLC, quote, trade, foreign-investor, market-index subscriptions.
+- API Platform cấp API Key + API Secret; 2FA được mô tả cho đặt lệnh.
+- PyPI hiện có `dnse-sdk-openapi` 1.4.6 và mô tả là official DNSE OpenAPI Python SDK.
+
+**Chưa verified:**
+
+- literal `index_name="VN100"` có được DNSE chấp nhận hay không. `[GUESS]`
+- exact live response schema/units/history depth/rate limit của account người dùng.
+- current VN100 returned count và reconciliation với HOSE.
+
+**Decision:** implement read-only DNSE adapter; chưa production-admit cho đến live validation.
+
+## 2. Vietstock DataFeed
+
+**Verified:** Vietstock Service Center công bố DataFeed cung cấp thông tin/dữ liệu tài chính qua **API hoặc Sync Data**, phù hợp fintech/định chế/NĐT chuyên nghiệp. `api.vietstock.vn` tồn tại và mô tả dữ liệu realtime, company info, BCTC, macro data.
+
+**Gap:** public material đã kiểm tra không cung cấp đủ endpoint/auth/request/response/rate-limit/licence contract để hard-code production adapter.
+
+**Decision:** implement `VietstockDataFeedProvider` dạng **contract-gated**. Không hard-code/reverse-engineer `finance.vietstock.vn`/browser internal endpoint. Khi có contract chính thức, chỉ cần inject base URL, paths, headers, params, response paths và field mapping.
+
+## 3. CafeF
+
+**Verified:** CafeF public historical pages hiển thị OHLC, matched volume/value, adjusted price và cho export Excel; trang ghi đơn vị giá là **nghìn VNĐ** và nêu dữ liệu có giá trị tham khảo.
+
+**Gap:** chưa verify official documented public API contract tương đương DNSE.
+
+**Decision:** implement `CafeFReferenceProvider` bằng public HTML table, **explicit opt-in**, rate-limited/reference-only. Giá được chuyển từ thousand VND sang canonical VND. Không dùng CafeF làm authoritative VN100 membership hoặc silent production fallback.
+
+## 4. Module đã implement
+
+`vn100_multisource_feed_v1`
+
+- `DNSEProvider`
+- `VietstockDataFeedProvider`
+- `CafeFReferenceProvider`
+- `SQLiteMarketCache`
+- `VN100Scanner`
+- canonical OHLCV schema + DQ validation
+- incremental recent-window refresh
+- optional cross-source close comparison
+- no silent fallback
+- no averaging provider disagreement
+- no auto-trading/order routing
+
+### Offline verification
+
+```text
+python -m compileall -q vn100_feed examples   PASS
+python -m pytest -q                           10 passed
+pip install -e . --no-deps --no-build-isolation   PASS
+```
+
+No live external provider call was executed in the build environment. Therefore status is **IMPLEMENTED + TESTED_OFFLINE**, not `VALIDATED_REAL_DATA`.
+
+## 5. `[GUESS]` operational defaults
+
+- DNSE `index_name="VN100"` until live verified.
+- cache recheck window = 5 calendar days.
+- secondary-validator sample size = 10 symbols.
+- close disagreement alert = 0.5%.
+- initial app lookback example = 550 calendar days.
+
+All are configurable and are not validated trading-alpha thresholds.
+
+## 6. Verification sources
+
+- DNSE API Platform: https://developers.dnse.com.vn/docs/guide/intro/api_platform/
+- DNSE Market Data: https://developers.dnse.com.vn/docs/dnse/market-data/
+- DNSE Instruments: https://developers.dnse.com.vn/docs/dnse/get-instruments/
+- DNSE OHLC: https://developers.dnse.com.vn/docs/dnse/get-ohlc-history/
+- DNSE Foreign Trading: https://developers.dnse.com.vn/docs/dnse/get-foreign-trading/
+- DNSE official SDK: https://github.com/dnse-tech/openapi-sdk
+- DNSE SDK PyPI package: https://pypi.org/project/dnse-sdk-openapi/
+- Vietstock API landing: https://api.vietstock.vn/
+- Vietstock Services/DataFeed: https://dichvu.vietstock.vn/dao-tao/khoa-hoc---nhap-mon-tai-chinh-va-chung-khoan?index=44
+- CafeF historical data sample: https://cafef.vn/du-lieu/lich-su-giao-dich-sdk-1.chn

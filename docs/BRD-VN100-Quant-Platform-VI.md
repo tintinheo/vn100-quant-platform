@@ -1,16 +1,29 @@
 # BRD — Nền tảng Nghiên cứu Định lượng & Khuyến nghị VN100
 
-**Business Requirements Document · v3.3 SSI-Free Multi-Source Baseline · Bản tiếng Việt**
+**Business Requirements Document · Tên file cố định · Version nội bộ hiện tại 3.5 · Bản tiếng Việt**
 
 | | |
 |---|---|
-| Phiên bản | **3.3 SSI-FREE MULTI-SOURCE BASELINE — 2026-09-10** |
-| Thay thế | `BRD-VN100-Quant-Platform-v3.2-MULTI-SOURCE-GOVERNANCE.md` |
-| Tài liệu đi kèm | `SRD — VN100 Quant Platform` |
-| Nguồn hợp nhất | baseline v3.2 + quyết định của product owner loại SSI FastConnect + đánh giá feasibility nguồn dữ liệu hiện tại |
-| Trạng thái v3.3 | **SSI FastConnect bị loại khỏi kiến trúc đang hoạt động vì product owner không thể đăng ký quyền truy cập. Hiện chưa có automated market-data provider nào được ADMITTED. Các nguồn chính thức vẫn là field authorities; Vietstock DataFeed là licensed candidate hàng đầu nhưng phải qua access/schema/rights validation; CafeF mặc định chỉ dùng cho manual/reference. Code SSI của v3.1 là legacy và không compliant với baseline này. Không có tuyên bố real-data validated hay production alpha.** |
+| File | `BRD-VN100-Quant-Platform-VI.md` |
+| Version nội bộ hiện tại | **3.5 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
+| Tài liệu đi kèm | `SRD-VN100-Quant-Platform.md` |
+| Bản tiếng Anh | `BRD-VN100-Quant-Platform.md` |
+| Trạng thái hiện tại | **AUTO-SYNC, không dùng SSI. DNSE là automated market-data candidate hàng đầu `[GUESS]`; read-only adapter đã implement/offline-test nhưng chưa live-data validated/admitted. Vietstock vẫn contract-gated; CafeF là explicit reference validation.** |
 
-> **Ghi chú bản dịch**: Đây là bản tiếng Việt đồng nghĩa nghiệp vụ của BRD v3.3. Các công thức, schema, enum, tên field, code snippet và tag `[S]`, `[M]`, `[A]`, `[D]`, `[GUESS]` được giữ nguyên để tránh thay đổi contract kỹ thuật.
+## Quản lý tài liệu & Lịch sử thay đổi
+
+**Chính sách tên file:** tài liệu này giữ **một tên file cố định**. Version được ghi **bên trong tài liệu**; các lần cập nhật sau phải sửa chính file này thay vì tạo filename theo version hoặc alias `LATEST`.
+
+| Version nội bộ | Ngày | Thay đổi chính |
+|---|---|---|
+| 3.0 | 2026-09-09 | Hợp nhất BRD/SRD và kiến trúc quant phân tầng. |
+| 3.1 | 2026-09-10 | Real-data-ready: sửa execution/settlement/cost, PIT discipline, provider boundary và validation honesty. |
+| 3.2 | 2026-09-10 | Multi-source data governance, provider trust tiers, source-admission/reconciliation rules. |
+| 3.3 | 2026-09-10 | Loại SSI FastConnect khỏi kiến trúc đang hoạt động; chuyển sang SSI-Free. |
+| 3.4 | 2026-09-13 | Yêu cầu auto-refresh khi chạy app: sync-if-stale, cache, fail-safe; CSV/XLSX chỉ còn fallback/debug. |
+| **3.5** | **2026-09-13** | **DNSE-first auto-sync: DNSE read-only adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. Chưa claim live-data validation.** |
+
+**Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
 ---
 
@@ -1015,7 +1028,7 @@ Baseline v3.3 không phụ thuộc SSI. Provider mới phải qua admission trư
 
 ## 24.3. Nguồn verification chính
 
-Nguồn authority ưu tiên: HOSE, HNX, VSDC, SSC, issuer disclosures và văn bản pháp lý liên quan. Vietstock/CafeF được dùng theo trust tier bên dưới.
+Nguồn authority ưu tiên vẫn là HOSE, HNX, VSDC, SSC, issuer disclosures và văn bản pháp lý liên quan. DNSE/Vietstock/CafeF được dùng theo trust tier bên dưới; DNSE hiện là automated market-data candidate hàng đầu `[GUESS]` nhưng chưa production-admitted.
 
 ---
 
@@ -1026,8 +1039,8 @@ Nguồn authority ưu tiên: HOSE, HNX, VSDC, SSC, issuer disclosures và văn b
 | Tier | Vai trò | Nguồn ở v3.3 |
 |---|---|---|
 | **T0 — official truth** | Rules, index review, corporate action, listing/trading status | HOSE/HNX/VSDC/SSC/issuer |
-| **T1 — documented machine feed** | Repeatable ingestion | **Chưa có provider nào ADMITTED** |
-| **T1L — licensed professional feed** | Candidate primary/validator | **Vietstock DataFeed** |
+| **T1 — documented machine feed** | Repeatable ingestion | **DNSE OpenAPI — candidate, CHƯA ADMITTED** |
+| **T1L — licensed professional feed** | Candidate primary/secondary/validator | **Vietstock DataFeed** |
 | **T2 — user-observable export/reference** | Manual cross-check | **CafeF pages/Excel export** |
 | **TQ — quarantine** | Research only | undocumented/reverse-engineered/scraped endpoints |
 
@@ -1067,7 +1080,7 @@ HTTP 200 không đồng nghĩa provider được admitted.
 |---|---|
 | Trading rules/settlement/bands | Official venue/regulator/VSDC |
 | VN100 definition/review | HOSE official evidence |
-| Daily raw OHLCV | Chưa có admitted automated provider; provider licensed/documented đầu tiên qua admission sẽ trở thành operational source |
+| Daily raw OHLCV | DNSE OpenAPI sau Source Admission `[GUESS]`; hiện chưa provider nào được production-admitted |
 | Corporate-action legal event/type | VSDC/exchange/issuer |
 | Sector/industry | Effective-dated project taxonomy từ sourced metadata |
 | Fundamentals | PIT filings/disclosures first; licensed normalized vendor sau admission |
@@ -1132,7 +1145,8 @@ Future research/implementation **không được đề xuất SSI** làm primary
 
 - Automated real-data readiness chuyển từ provider-specific thành provider-agnostic specification.
 - Chưa có automated market-data provider nào được ADMITTED.
-- **Vietstock DataFeed là licensed candidate hàng đầu `[GUESS]`**, cần feasibility về price/access/contract/schema/rights.
+- **DNSE OpenAPI là documented automated market-data candidate hàng đầu `[GUESS]`**, nhưng vẫn cần live Source Admission.
+- **Vietstock DataFeed là licensed secondary/alternative candidate hàng đầu `[GUESS]`**, cần feasibility về price/access/contract/schema/rights.
 - HOSE/HNX/VSDC/SSC/issuer là authority cho governed fields.
 - CafeF mặc định chỉ dùng validation/manual import.
 - Browser-visible endpoint không được xem là approved API.
@@ -1162,3 +1176,193 @@ Mọi measured result từ implementation cũ dùng **synthetic data**, không p
 Forecast là distribution/probability, không phải prediction chắc chắn.
 
 Theo settlement hiện hành, chứng khoán mua được phân bổ khoảng 13:00 T+2 và có thể bán buổi chiều sau khi phân bổ. Model đồng thời dùng stress scenario ba phiên giảm sàn khoảng −19.56% trên HOSE cho sizing; đây không phải worst case tuyệt đối và không có nghĩa 3 full sessions bị khóa bán về mặt pháp lý.
+
+
+# 28. v3.4 — TỰ ĐỘNG QUÉT/ĐỒNG BỘ DỮ LIỆU MỖI LẦN CHẠY APP
+
+## 28.1. Yêu cầu nghiệp vụ
+
+Luồng sử dụng bình thường **không được yêu cầu người dùng chuẩn bị/import CSV hoặc Excel trước mỗi lần chạy**. `[GUESS]`
+
+Mỗi lần app khởi động/chạy phải thực hiện **Source Sync Check** trước khi tạo phân tích/khuyến nghị có thể hành động:
+
+```text
+APP START / RUN
+      ↓
+SourceSyncOrchestrator
+      ↓
+Provider Registry + Source Admission
+      ↓
+Kiểm tra freshness / completeness / revision
+      ↓
+┌──────────────────────────────────────┐
+│ dữ liệu đủ mới và đầy đủ             │ → dùng canonical cache
+│ dữ liệu stale/thiếu                   │ → incremental provider fetch
+│ chưa có provider ADMITTED             │ → NO_ADMITTED_PROVIDER
+│ provider lỗi tạm thời                 │ → cached degraded mode nếu policy cho phép
+└──────────────────────────────────────┘
+      ↓
+immutable raw snapshot
+      ↓
+normalize + reconcile + DQ
+      ↓
+canonical warehouse
+      ↓
+market / sector / signal / forecast / recommendation
+```
+
+Do Streamlit có thể rerun script khi người dùng tương tác widget, **một UI rerun không đồng nghĩa với việc được phép gọi API lại**. `[GUESS]` Sync service phải chống duplicate/concurrent fetch và tái sử dụng kết quả sync khi freshness state chưa thay đổi.
+
+## 28.2. Incremental refresh
+
+Sau lần bootstrap đầu tiên, hệ thống chỉ tải phần dữ liệu thiếu hoặc cửa sổ cần kiểm tra revision; không tải lại toàn bộ lịch sử sau mỗi lần mở app. `[GUESS]`
+
+Revision-lookback cụ thể phụ thuộc provider và giữ trạng thái `[GUESS]` cho đến khi đo được behaviour sửa dữ liệu thực tế.
+
+## 28.3. Các capability cần quản lý freshness riêng
+
+```text
+daily_ohlcv
+index_bars
+vn100_membership
+sector_metadata
+corporate_actions
+fundamentals
+foreign_flow
+disclosures
+intraday_snapshot   # optional, không bắt buộc cho EOD-first
+```
+
+Mỗi lần app chạy đều kiểm tra freshness/completeness của các capability cần cho workflow hiện tại; chỉ gọi remote provider khi policy xác định dữ liệu stale, thiếu, có revision hoặc người dùng force refresh.
+
+## 28.4. Vai trò Vietstock
+
+Nguồn dịch vụ chính thức của Vietstock xác nhận **DataFeed** cung cấp thông tin/dữ liệu tài chính qua **API hoặc Sync Data** và hướng tới tích hợp chuyên nghiệp. Điều này đủ để giữ Vietstock ở vị trí automated-provider candidate hợp lệ.
+
+Nhưng v3.4 **không tuyên bố** rằng:
+
+- hiện đã có credentials/contract Vietstock DataFeed;
+- public website đã cung cấp đầy đủ endpoint/auth/schema/rate-limit để code production an toàn;
+- endpoint nội bộ của `finance.vietstock.vn` có thể thay thế API DataFeed;
+- Vietstock đã pass Source Admission hoặc real-data reconciliation.
+
+Từ v3.5, `VietstockDataFeedProvider` generic contract-gated đã **IMPLEMENTED + TESTED_OFFLINE**, nhưng vẫn `NOT ADMITTED / NOT LIVE-VALIDATED`; nó không thể gọi live cho đến khi có endpoint/auth/schema mapping từ contract chính thức.
+
+## 28.5. Vai trò CSV/XLSX từ v3.4
+
+CSV/XLSX chỉ còn là đường hỗ trợ có kiểm soát `[GUESS]` cho:
+
+- bootstrap lịch sử khi quyền sử dụng cho phép;
+- disaster/recovery;
+- debug và đối chiếu provider;
+- import bằng chứng chính thức một lần;
+- test fixtures tái lập được.
+
+Đây **không phải** daily workflow mong đợi.
+
+## 28.6. Degraded mode `[GUESS]`
+
+Nếu provider ADMITTED lỗi tạm thời nhưng local warehouse còn snapshot đã được chấp nhận, UI có thể chạy `DEGRADED_CACHED_DATA` khi:
+
+- hiển thị rõ tuổi dữ liệu;
+- recommendation bị block hoặc confidence-cap theo DQ/freshness policy;
+- lưu provider lỗi, thời gian sync thành công cuối và failure reason;
+- không âm thầm thay bằng synthetic hay nguồn undocumented.
+
+Nếu không có cache đủ điều kiện, real-data analysis phải fail closed.
+
+## 28.7. Acceptance criteria
+
+```text
+test_app_run_invokes_source_sync_check
+test_fresh_cache_avoids_duplicate_remote_fetch
+test_stale_data_triggers_incremental_fetch
+test_streamlit_rerun_does_not_refetch_same_state
+test_no_admitted_provider_fails_closed
+test_provider_failure_never_falls_back_to_undocumented_source
+test_manual_file_is_not_required_for_normal_startup
+test_raw_response_snapshotted_before_normalization
+test_sync_lineage_records_provider_and_fetch_time
+```
+
+## 28.8. Nguồn verify cập nhật 2026-09-13
+
+- Vietstock Service Center — DataFeed được mô tả cung cấp dữ liệu qua **API hoặc Sync Data**: https://dichvu.vietstock.vn/Service.aspx
+- Vietstock API landing: https://api.vietstock.vn/
+
+Các nguồn public này xác nhận **sự tồn tại và vai trò machine-integration** của DataFeed; implementation contract cụ thể vẫn cần tài liệu/access được Vietstock cấp.
+
+
+# 29. v3.5 — MODULE AUTO-SYNC ĐA NGUỒN, DNSE LÀ PRIMARY CANDIDATE
+
+## 29.1. Quyết định sau research ngày 2026-09-13
+
+Tài liệu DNSE hiện tại xác minh OpenAPI có market-data REST cho danh sách/metadata mã (`GET /instruments`), lịch sử OHLC (`GET /price/ohlc`), dữ liệu NĐT nước ngoài, ngày giao dịch và các dataset thị trường khác. DNSE cũng công bố Python SDK chính thức và WebSocket market-data examples.
+
+Vì vậy, **DNSE trở thành automated market-data candidate hàng đầu `[GUESS]`** cho runtime VN100. Đây chưa phải Source Admission. Trước production cần live-verify credentials, response schema, units, accepted `index_name`, history depth, correction/revision behavior, quota/rate limits và reconciliation với nguồn thứ hai.
+
+Vietstock DataFeed vẫn là licensed feed candidate mạnh cho normalized financial/fundamental/event data, nhưng contract chi tiết vẫn phải lấy từ Vietstock. CafeF ở T2 reference: trang lịch sử công khai OHLC/volume và ghi giá theo `nghìn VNĐ`, nhưng chưa xác minh official public API contract tương đương DNSE.
+
+## 29.2. Trạng thái module đã implement
+
+Module giao: `vn100_multisource_feed_v1`.
+
+```text
+IMPLEMENTED + TESTED_OFFLINE
+10/10 tests PASS
+DNSE live validation = CHƯA THỰC HIỆN
+Vietstock live validation = CHƯA THỰC HIỆN
+CafeF live automation validation = CHƯA THỰC HIỆN
+Production Source Admission = CHƯA CÓ
+```
+
+Module gồm:
+
+```text
+DNSEProvider
+VietstockDataFeedProvider (contract-gated)
+CafeFReferenceProvider (explicit opt-in)
+SQLiteMarketCache
+VN100Scanner
+Data Quality + cross-source disagreement flags
+```
+
+Scanner không silent fallback và không average giá khi provider bất đồng. `recheck_days=5`, validator sample `10`, close-difference flag `0.5%` là `[GUESS]` operational defaults, cấu hình được.
+
+## 29.3. Lưu ý VN100
+
+Official DNSE SDK xác minh `get_instruments(..., index_name=...)` tồn tại, nhưng public material đã kiểm tra chưa chứng minh literal `index_name="VN100"` là accepted value. Vì vậy literal này là `[GUESS]` cho đến live validation. Module fail closed nếu không có symbol và cảnh báo nếu unique member count khác 100.
+
+Current membership, kể cả lấy thành công từ DNSE, **không được dùng im lặng cho historical backtest**. PIT universe requirement vẫn giữ nguyên.
+
+## 29.4. Routing target `[GUESS]`
+
+```text
+Current VN100 + EOD OHLCV:
+  DNSE OpenAPI        -> primary candidate sau admission
+  Vietstock DataFeed -> licensed alternative sau contract admission
+  CafeF               -> opt-in reference validator
+
+Fundamental/events:
+  official disclosures -> field authority
+  Vietstock DataFeed   -> normalized operational candidate sau admission
+```
+
+Không reverse-engineer Vietstock/CafeF browser endpoint thành production API. Module này không có order routing/auto trading.
+
+## 29.5. Gate tiếp theo
+
+Để chuyển sang `VALIDATED_REAL_DATA` cần chạy live DNSE read-only smoke test, verify VN100 filter, đối chiếu sample OHLCV/units với nguồn thứ hai, kiểm tra calendar/history/revision/rate-limit, và chỉ enable Vietstock sau khi có contract hợp lệ.
+
+## 29.6. Verification sources — accessed 2026-09-13
+
+- https://developers.dnse.com.vn/docs/guide/intro/api_platform/
+- https://developers.dnse.com.vn/docs/dnse/market-data/
+- https://developers.dnse.com.vn/docs/dnse/get-instruments/
+- https://developers.dnse.com.vn/docs/dnse/get-ohlc-history/
+- https://developers.dnse.com.vn/docs/dnse/get-foreign-trading/
+- https://github.com/dnse-tech/openapi-sdk
+- https://pypi.org/project/dnse-sdk-openapi/
+- https://api.vietstock.vn/
+- https://dichvu.vietstock.vn/dao-tao/khoa-hoc---nhap-mon-tai-chinh-va-chung-khoan?index=44
+- https://cafef.vn/du-lieu/lich-su-giao-dich-sdk-1.chn

@@ -1,122 +1,164 @@
-# AGENTS.md — VN100 Quant Platform
+# Agent.md — VN100 Quant Platform Codex Instructions
 
-## Required reading
+**Stable filename:** `Agent.md`  
+**Current internal revision:** **1.0 — 2026-09-13**
+
+> **Important:** this project intentionally keeps the filename `Agent.md`. Do not rename it. Because Codex may not auto-discover this non-standard filename, every Codex Cloud task must explicitly begin with: **`Read Agent.md first and follow it as repository instructions.`**
+
+## Change Log
+
+| Revision | Date | Change |
+|---|---|---|
+| **1.0** | **2026-09-13** | **Aligned Codex instructions to stable-document naming and baseline 3.5 DNSE-first auto-sync architecture.** |
+
+## 1. Mission
+
+Build a personal Vietnam equity quantitative research and recommendation application focused on VN100 securities.
+
+The product researches/ranks VN100 stocks, identifies market regime and sector rotation, generates setup/entry/invalidation/target recommendations, performs execution-aware backtests, and may estimate forward-return distributions or calibrated probabilities. It **does not** automatically place orders and **does not** provide an order-routing path.
+
+Target environment: Python, Windows 11, Streamlit, GitHub and Codex Cloud.
+
+## 2. Required reading
 
 Before changing code, read in this order:
 
-1. docs/CURRENT_BASELINE.md
-2. docs/BRD-VN100-Quant-Platform-SSI-FREE-MULTI-SOURCE.md
-3. docs/SRD-VN100-Quant-Platform-SSI-FREE-MULTI-SOURCE.md
-4. docs/CHANGELOG_SSI_FREE_MULTI_SOURCE.md
+1. `Agent.md`
+2. `CURRENT_BASELINE.md`
+3. `BRD-VN100-Quant-Platform.md`
+4. `SRD-VN100-Quant-Platform.md`
+5. `PROVIDER-RESEARCH-REPORT.md`
 
-The BRD is the source of truth for business rules, trading rules,
-thresholds, assumptions and validation requirements.
+Product-owner companion: `BRD-VN100-Quant-Platform-VI.md`.
 
-The SRD defines how the BRD must be implemented.
+Authority order: `CURRENT_BASELINE → BRD → SRD → provider research/ADRs → implementation → tests`.
 
-Do not invent a new threshold in code.
+The BRD is the source of truth for business/trading rules, thresholds and validation policy. The SRD defines how to implement them. Do not invent trading thresholds in source code.
 
-## Current architecture
+## 3. Stable document policy
 
-Current baseline:
-v3.3 SSI-Free Multi-Source.
+Do not create document filenames containing version numbers and do not create `LATEST` aliases. Maintain version/date/change history inside the existing files and in Git history.
 
-SSI FastConnect is OUT OF SCOPE.
+For any material research/assessment/implementation change, update BRD English + BRD Vietnamese + SRD in the same PR/work cycle, append their internal Change Logs, update `CURRENT_BASELINE.md` when baseline/state changes, and update the provider report when provider evidence changes.
 
-Do not:
-- add SSI SDK
-- add SSI credentials
-- restore SSI bootstrap
-- use vnstock
-- implement auto trading
-- implement order routing
-- silently fall back to Yahoo or undocumented APIs
-- scrape undocumented production endpoints
-- fabricate real-data results
+Any invented, inferred, unsourced or not-yet-verified statement must be marked `[GUESS]`.
 
-## Data provider state
+## 4. Current baseline
 
-No automated provider is currently ADMITTED.
+Current internal baseline: **3.5 — SSI-Free DNSE-First Auto-Sync**.
 
-Vietstock DataFeed is a provider candidate only.
+SSI FastConnect is **OUT OF SCOPE / DISABLED**. Do not add `ssi-sdk`, SSI credentials, SSI bootstrap/doctor, or use SSI as primary/fallback/validator.
 
-CafeF is manual/reference/authorized-export validation by default.
+## 5. Provider policy
 
-Official field authorities include:
-HOSE, HNX, VSDC, SSC and issuer disclosures.
+### DNSE
+DNSE OpenAPI is the leading automated market-data provider candidate `[GUESS]`. A read-only adapter exists in `vn100_multisource_feed_v1`. Allowed work is documented read-only market data. Do not add order placement, trading tokens, OTP/2FA trading flows or brokerage trading functions.
 
-If no admitted provider exists, the application must fail closed with:
-NO_ADMITTED_PROVIDER.
+Implementation does not equal admission. Provider state must progress explicitly: `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED`. Do not claim `ADMITTED` or `REAL_DATA_VALIDATED` without live evidence. Keep unverified VN100 index literals, resolution strings, live schema/units, history depth and rate-limit behavior marked `[GUESS]` until verified.
 
-## Assumptions
+### Vietstock
+Vietstock DataFeed is a licensed secondary/alternative candidate `[GUESS]`. Do not reverse-engineer `finance.vietstock.vn` browser/XHR endpoints as production API. Production calls require an authorized contract specifying base URL, auth, endpoint semantics, schema, pagination, units, adjusted/raw semantics, revision policy, rate limits and usage rights. Until then, fail closed.
 
-Any new:
-- heuristic
-- threshold
-- inferred rule
-- unsourced parameter
+### CafeF
+CafeF is reference / explicit cross-validation by default. It must not silently replace DNSE. Public-page parsing must be opt-in, preserve provenance and fail clearly if layout changes. Do not depend on undocumented private APIs.
 
-must be marked:
+## 6. Failover policy
 
-[GUESS]
+There is **no silent provider fallback**. On provider failure: record it, evaluate accepted cached data, expose `DEGRADED`/`STALE`, and block actionable recommendations when DQ policy requires it. Provider changes must remain visible in lineage. Never average conflicting provider prices just to hide disagreement.
 
-Do not present [GUESS] values as validated alpha.
+## 7. Auto-sync runtime
 
-## Data integrity
+Normal use must not require CSV/XLSX import.
 
-Prevent:
-- look-ahead bias
-- survivorship bias
-- future corporate-action leakage
-- future fundamental publication leakage
-- silent forward-fill of missing trading sessions
-- current-universe substitution without warning
+`APP START → sync check → expected latest session → local cache → missing/stale window → provider fetch → raw snapshot → normalization → DQ → persistent cache/warehouse → analytics → recommendations`
 
-Historical proxy data must be labelled explicitly.
+Auto-refresh does **not** mean full-history download on every Streamlit rerun. Use freshness checks, incremental refresh, cache and locking. CSV/XLSX is secondary only for bootstrap, recovery, debugging, tests, provider comparison or one-off authorized evidence.
 
-## Development workflow
+## 8. Current implemented subsystem
 
-For every task:
+`vn100_multisource_feed_v1` currently includes provider abstraction, DNSE read-only adapter, Vietstock contract gate, CafeF reference parser, SQLite cache, incremental scanner, DQ checks, disagreement handling and DNSE doctor. Current offline evidence: **10/10 tests passed**. Do not interpret offline tests as live market-data validation.
 
-1. State what BRD/SRD requirements are being implemented.
-2. Inspect existing implementation before editing.
-3. Implement only the requested milestone.
-4. Add regression/unit tests.
-5. Run the full relevant test suite.
-6. Report changed files.
-7. Report assumptions.
-8. Report unresolved issues.
-9. Do not claim real-data validation unless real data was actually processed.
+## 9. Canonical data and lineage
 
-## Documentation governance
+Normalize provider data before analytics and preserve at least: `symbol, trading_date, open, high, low, close, volume, value, adj_close, provider, trust_tier, raw_price_unit, ingested_at`.
 
-If research or implementation reveals a material change to:
-- business rule
-- architecture
-- data-source policy
-- market rule
-- execution rule
-- threshold
-- validation policy
-- known limitation
+Preserve raw provider representation/snapshots where practical. Do not silently mix adjusted/raw prices. Do not infer corporate-action type solely from an adjustment factor.
 
-then BRD and SRD must be updated in the same PR.
+## 10. Data quality
 
-Do not change only one of them.
+Validate before features/signals: duplicate `(symbol, trading_date)`, invalid dates, OHLC invariants, negative prices/volume, suspicious gaps, stale data, missing expected sessions, provider disagreement and unresolved corporate actions. Do not silently forward-fill missing prices as if a trade occurred. DQ degradation must propagate to confidence or block actionable recommendations per BRD.
 
-## Pull requests
+## 11. Point-in-time discipline
 
-Prefer small PRs.
+Prevent look-ahead, survivorship bias, future VN100 membership leakage, future sector leakage, future corporate-action leakage and future financial-statement leakage. Historical VN100 membership must be effective-dated. Current membership used historically must be labelled as proxy. For fundamentals, `published_at` governs availability, not only `period_end`.
 
-Each PR must include:
+## 12. Quant architecture
 
-- Purpose
-- BRD requirement
-- SRD requirement
-- Files changed
-- Tests added
-- Tests executed
-- Results
-- [GUESS] assumptions
-- Known limitations
-- Real-data status
+Decision hierarchy: `MARKET → REGIME → SECTOR → ARCHETYPE → STRATEGY FAMILY → SETUP → ENTRY TRIGGER → INVALIDATION → EXPECTED VALUE → EXECUTION FEASIBILITY → RECOMMENDATION`.
+
+Core families: Trend Pullback, Momentum Continuation, Structural Reversal / Mean Reversion. Indicators are evidence, not standalone rules. Wyckoff/SMC concepts must be measurable/testable; Elliott is hypothesis support, not deterministic trade logic.
+
+## 13. Forecast policy
+
+Prefer forward return, excess return, probability of outperforming and return distributions over exact point-price claims. Use time-series validation; never random-split financial time series. Prevent label leakage. Suppress models that fail validation; `FORECAST_UNAVAILABLE` is valid.
+
+## 14. Parameter governance
+
+`[S]` structural/regulatory; `[M]` measured; `[A]` academic evidence; `[D]` default requiring calibration; `[GUESS]` invented/inferred/unsourced/unverified.
+
+Any new threshold, heuristic, provider assumption, weight, lookback or cutoff without authoritative evidence must carry `[GUESS]`. Unit tests validate implementation, not alpha.
+
+## 15. Backtest rules
+
+Backtests must be execution-aware. No same-close fill for a signal generated from that close. Do not assume every limit order fills. Model price bands, suspensions, costs, corporate actions and PIT universe. Keep rejected/unfilled attempts auditable. Separate signal date, attempt date, fill date, regulatory sellability and policy earliest exit. `SELL` means reduce/exit long, not naked short.
+
+## 16. Security
+
+Never commit API keys, secrets, tokens, OTPs, signing keys or brokerage passwords. Use environment variables or approved secret store. Never log full secrets. Tests use fake credentials/mocks.
+
+## 17. Forbidden functionality/dependencies
+
+Without explicit product-owner approval, do not introduce `vnstock`, SSI FastConnect, broker order-routing, automatic execution, hidden scraping dependencies, synthetic fallback masquerading as real data, or current-universe historical backtests without proxy warning.
+
+## 18. Development workflow
+
+For every Codex task:
+
+1. read `Agent.md` first;
+2. read current baseline + applicable BRD/SRD sections;
+3. inspect existing code before editing;
+4. state the requirement being implemented;
+5. make the smallest coherent change;
+6. add unit/regression tests;
+7. run relevant tests and broader suite when feasible;
+8. review leakage/provider-policy risks;
+9. report changed files, assumptions, `[GUESS]` additions and unresolved issues;
+10. state real-data validation status honestly;
+11. evaluate documentation impact and update stable docs in the same PR when material.
+
+Never claim success solely because code compiles.
+
+## 19. Validation commands
+
+For `vn100_multisource_feed_v1`, run at minimum:
+
+```bash
+python -m compileall -q vn100_feed
+python -m pytest -q
+```
+
+When package installation is part of the task:
+
+```bash
+pip install -e . --no-deps --no-build-isolation
+```
+
+When approved DNSE credentials are available, run the read-only doctor before promoting provider status. If network/credentials/dependencies are unavailable, report the limitation; never fabricate success.
+
+## 20. Pull-request contract
+
+Every PR must state: Purpose; current baseline; BRD/SRD requirements; changed files; tests/results; data status (`SYNTHETIC_ONLY`, `OFFLINE_TESTED`, `DOCTOR_PASSED`, `CROSS_VALIDATED`, `REAL_DATA_VALIDATED`); all new `[GUESS]`; known limitations; documentation impact. Prefer small reviewable PRs.
+
+## 21. Completion criteria
+
+A task is complete only when requested behavior exists, important tests exist and were run where possible, secrets are absent, provider lineage is preserved, prohibited dependencies are absent, leakage risks were checked, documentation impact was evaluated, and real-data status is stated accurately. Fail-closed behavior is preferable to invented data, silent fallback or false validation.
