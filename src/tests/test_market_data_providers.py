@@ -6,6 +6,7 @@ import pytest
 
 from vnquant.data.provider_registry import (
     NoAdmittedProvider,
+    ProviderRegistry,
     ProviderState,
     default_provider_registry,
 )
@@ -50,12 +51,34 @@ def test_default_implementations_are_registered_but_not_admitted():
 
 def test_dnse_http_success_does_not_promote_admission():
     provider = DNSEProvider(client=SuccessfulDNSEClient())
-    registry = default_provider_registry()
+    registry = ProviderRegistry()
+    registry.register(provider, state=ProviderState.CANDIDATE, documented_access=True)
 
     assert provider.current_index_members() == ["VNM"]
     assert not provider.daily_history("VNM", date(2026, 9, 8), date(2026, 9, 9)).empty
     assert registry.registration("dnse_openapi").state is ProviderState.CANDIDATE
     assert registry.admitted_provider_ids("daily_ohlcv") == ()
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        ProviderState.CANDIDATE,
+        ProviderState.DOCTOR_PASSED,
+        ProviderState.CROSS_VALIDATED,
+        ProviderState.RESEARCH_ONLY,
+    ],
+)
+def test_every_non_admitted_governance_state_remains_unselectable(state):
+    provider = DNSEProvider(client=SuccessfulDNSEClient())
+    registry = ProviderRegistry()
+    registry.register(provider, state=state, documented_access=True)
+
+    # A successful provider response is operational evidence, not admission.
+    assert provider.current_index_members() == ["VNM"]
+    assert registry.registration(provider.provider_id).state is state
+    with pytest.raises(NoAdmittedProvider):
+        registry.select(provider_id=provider.provider_id, capability="daily_ohlcv")
 
 
 def test_dnse_surface_has_no_brokerage_execution_methods():
@@ -94,7 +117,8 @@ def test_authorized_vietstock_http_success_still_does_not_admit_provider():
         usage_rights="authorized for internal research",
     )
     provider = VietstockDataFeedProvider(contract, transport=lambda **kwargs: [{"ticker": "VNM"}])
-    registry = default_provider_registry()
+    registry = ProviderRegistry()
+    registry.register(provider, state=ProviderState.CANDIDATE, documented_access=True)
 
     assert provider.current_index_members() == ["VNM"]
     assert registry.registration("vietstock_datafeed").state is ProviderState.CANDIDATE
