@@ -88,6 +88,14 @@ class ProviderRegistry:
             and capability in registration.provider.capabilities
         )
 
+    def registration(self, provider_id: str) -> ProviderRegistration:
+        """Expose immutable governance metadata without deriving state from I/O."""
+        normalized = provider_id.strip().lower()
+        registration = self._registrations.get(normalized)
+        if registration is None:
+            raise ProviderNotAllowed(f"provider {normalized!r} is not registered")
+        return registration
+
     def select(
         self,
         *,
@@ -126,5 +134,19 @@ class ProviderRegistry:
 
 
 def default_provider_registry() -> ProviderRegistry:
-    """Return the v3.3 registry; no automated provider is currently admitted."""
-    return ProviderRegistry()
+    """Return implemented providers in policy-safe, non-admitted states."""
+    from .providers import CafeFReferenceProvider, DNSEProvider, VietstockDataFeedProvider
+
+    registry = ProviderRegistry()
+    registry.register(DNSEProvider(), state=ProviderState.CANDIDATE, documented_access=True)
+    registry.register(
+        VietstockDataFeedProvider(),
+        state=ProviderState.CANDIDATE,
+        documented_access=False,
+    )
+    registry.register(
+        CafeFReferenceProvider(),
+        state=ProviderState.RESEARCH_ONLY,
+        documented_access=False,
+    )
+    return registry
