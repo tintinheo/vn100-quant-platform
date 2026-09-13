@@ -1,7 +1,7 @@
 # Agent.md — VN100 Quant Platform Codex Instructions
 
 **Stable filename:** `Agent.md`  
-**Current internal revision:** **1.0 — 2026-09-13**
+**Current internal revision:** **1.1 — 2026-09-13**
 
 > **Important:** this project intentionally keeps the filename `Agent.md`. Do not rename it. Because Codex may not auto-discover this non-standard filename, every Codex Cloud task must explicitly begin with: **`Read Agent.md first and follow it as repository instructions.`**
 
@@ -10,6 +10,7 @@
 | Revision | Date | Change |
 |---|---|---|
 | **1.0** | **2026-09-13** | **Aligned Codex instructions to stable-document naming and baseline 3.5 DNSE-first auto-sync architecture.** |
+| **1.1** | **2026-09-13** | **Made the provider lifecycle and persisted admission-evidence gates authoritative across runtime and specifications.** |
 
 ## 1. Mission
 
@@ -55,6 +56,8 @@ SSI FastConnect is **OUT OF SCOPE / DISABLED**. Do not add `ssi-sdk`, SSI creden
 DNSE OpenAPI is the leading automated market-data provider candidate `[GUESS]`. A read-only adapter exists in `vn100_multisource_feed_v1`. Allowed work is documented read-only market data. Do not add order placement, trading tokens, OTP/2FA trading flows or brokerage trading functions.
 
 Implementation does not equal admission. Provider state must progress explicitly: `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED`. Do not claim `ADMITTED` or `REAL_DATA_VALIDATED` without live evidence. Keep unverified VN100 index literals, resolution strings, live schema/units, history depth and rate-limit behavior marked `[GUESS]` until verified.
+
+This lifecycle is authoritative for every real-data provider. A provider may move to `SUSPENDED` or `RETIRED`, but it must never skip a forward gate or self-promote. Admission requires a persisted, unexpired review record containing access basis, licence/terms reference, schema and units, timezone/trading-date semantics, raw-versus-adjusted policy, revision behavior, rate limits, lineage method, independent validation plan, owner, `reviewed_at`, and `next_review_at`. `DOCTOR_PASSED` additionally requires a dated doctor report; `CROSS_VALIDATED` requires a dated independent cross-validation report. `ADMITTED` requires both. Undocumented endpoints and synthetic/test providers are never admission-eligible. An HTTP success or `documented_access=True` Boolean is not evidence.
 
 ### Vietstock
 Vietstock DataFeed is a licensed secondary/alternative candidate `[GUESS]`. Do not reverse-engineer `finance.vietstock.vn` browser/XHR endpoints as production API. Production calls require an authorized contract specifying base URL, auth, endpoint semantics, schema, pagination, units, adjusted/raw semantics, revision policy, rate limits and usage rights. Until then, fail closed.

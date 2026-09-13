@@ -1,11 +1,11 @@
 # BRD — VN100 Quant Research & Recommendation Platform
 
-**Business Requirements Document · Stable filename · Current internal version 3.5**
+**Business Requirements Document · Stable filename · Current internal version 3.5.1**
 
 | | |
 |---|---|
 | File | `BRD-VN100-Quant-Platform.md` |
-| Current internal version | **3.5 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
+| Current internal version | **3.5.1 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
 | Companion | `SRD-VN100-Quant-Platform.md` |
 | Vietnamese companion | `BRD-VN100-Quant-Platform-VI.md` |
 | Current status | **AUTO-SYNC, SSI-free. DNSE is the leading automated market-data candidate `[GUESS]`; its read-only adapter is implemented/offline-tested, but no provider is yet live-data validated/admitted. Vietstock remains contract-gated; CafeF remains explicit reference validation.** |
@@ -22,6 +22,7 @@
 | 3.3 | 2026-09-10 | SSI FastConnect removed from active architecture; SSI-Free baseline. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run requirement: sync-if-stale, cache, fail-safe; CSV/XLSX demoted to fallback/debug. |
 | **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. No live-data validation claim.** |
+| **3.5.1** | **2026-09-13** | **Unified provider admission as CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED with persisted, review-dated evidence and fail-closed runtime selection.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1639,7 +1640,7 @@ independent validation plan
 owner + reviewed_at + next_review_at
 ```
 
-`[GUESS]` Admission states: `RESEARCH_ONLY -> QUARANTINED -> VALIDATION -> ADMITTED -> SUSPENDED/RETIRED`.
+`[GUESS]` The authoritative admission lifecycle is `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED`. An operator may transition a provider to `SUSPENDED` or `RETIRED`, but forward gates cannot be skipped. The persisted review record must be complete and unexpired at selection time. `DOCTOR_PASSED` requires a dated doctor report; `CROSS_VALIDATED` requires a dated independent validation report; `ADMITTED` requires both. Undocumented endpoints and synthetic/test providers are never eligible. A Boolean such as `documented_access=True` is not admission evidence.
 
 No provider can auto-promote itself because the endpoint returned HTTP 200.
 

@@ -20,6 +20,7 @@
 - Executable data subsystem: `vn100_multisource_feed_v1` — **IMPLEMENTED + TESTED_OFFLINE, 10/10 PASS**.
 - Main trading/analytics app: legacy v3.1 remains to be migrated/integrated with the new module.
 - Real-data validation: **NOT YET PERFORMED**.
+- Provider admission registry: **3.5.1 lifecycle/evidence gates implemented and offline-tested**; no provider has thereby been admitted or real-data validated.
 
 ## Mandatory governance
 
@@ -42,3 +43,4 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | 3.3 | 2026-09-10 | SSI removed from active architecture. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run / sync-if-stale data ingestion. |
 | **3.5** | **2026-09-13** | **DNSE-first provider research + implemented/offline-tested multi-source scanner.** |
+| **3.5.1** | **2026-09-13** | **Persisted provider-admission evidence and mandatory doctor/cross-validation lifecycle gates implemented.** |

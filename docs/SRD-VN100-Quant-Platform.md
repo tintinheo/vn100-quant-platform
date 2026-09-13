@@ -1,11 +1,11 @@
 # SRD — VN100 Quant Research & Recommendation Platform
 
-**Software Requirements Document · Stable filename · Current internal version 3.5**
+**Software Requirements Document · Stable filename · Current internal version 3.5.1**
 
 | | |
 |---|---|
 | File | `SRD-VN100-Quant-Platform.md` |
-| Current internal version | **3.5 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
+| Current internal version | **3.5.1 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
 | Companion | `BRD-VN100-Quant-Platform.md` — read that first |
 | Basis | Current BRD + source-governance research + implemented/offline-tested multi-source feed module |
 | Reality check | **Main app remains legacy v3.1 pending migration. `vn100_multisource_feed_v1` is implemented + offline tested (10/10), but no provider is production-admitted or live-data validated.** |
@@ -22,6 +22,7 @@
 | 3.3 | 2026-09-10 | SSI FastConnect removed from active architecture; SSI-Free baseline. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run requirement: sync-if-stale, cache, fail-safe; CSV/XLSX demoted to fallback/debug. |
 | **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. No live-data validation claim.** |
+| **3.5.1** | **2026-09-13** | **Implemented persisted provider evidence and enforced CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED gates for real selection.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -490,6 +491,8 @@ providers:
 The exact Vietstock schema/capabilities are `TBD` until commercial documentation or an authorized sample is reviewed. Do not infer field coverage from marketing copy.
 
 Production admission requires evidence for access rights, schema semantics, timezone/trading-date rules, units, raw/adjusted treatment, revision behaviour, lineage capture and an independent validation plan. Failure of any gate is a **hard stop for canonical writes**, not an invitation to scrape another site silently.
+
+The authoritative runtime lifecycle is `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED`, plus terminal/control transitions to `SUSPENDED` or `RETIRED`. `ProviderRegistry` must persist state together with access basis, licence reference, schema and units, timezone/date semantics, raw/adjusted policy, revision behavior, rate limits, lineage method, independent validation plan, owner and review dates. It must reject skipped gates, expired/incomplete records, undocumented endpoints, and synthetic/test providers. The doctor gate requires its dated report reference; the cross-validation gate requires its dated independent report reference. `select(..., mode=REAL)` revalidates all evidence and may return only an `ADMITTED` provider. A `documented_access` Boolean alone has no admission meaning.
 
 ## 6.1B. Provider fallback is explicit, never silent `[GUESS]`
 

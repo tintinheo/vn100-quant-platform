@@ -1,11 +1,11 @@
 # BRD — Nền tảng Nghiên cứu Định lượng & Khuyến nghị VN100
 
-**Business Requirements Document · Tên file cố định · Version nội bộ hiện tại 3.5 · Bản tiếng Việt**
+**Business Requirements Document · Tên file cố định · Version nội bộ hiện tại 3.5.1 · Bản tiếng Việt**
 
 | | |
 |---|---|
 | File | `BRD-VN100-Quant-Platform-VI.md` |
-| Version nội bộ hiện tại | **3.5 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
+| Version nội bộ hiện tại | **3.5.1 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
 | Tài liệu đi kèm | `SRD-VN100-Quant-Platform.md` |
 | Bản tiếng Anh | `BRD-VN100-Quant-Platform.md` |
 | Trạng thái hiện tại | **AUTO-SYNC, không dùng SSI. DNSE là automated market-data candidate hàng đầu `[GUESS]`; read-only adapter đã implement/offline-test nhưng chưa live-data validated/admitted. Vietstock vẫn contract-gated; CafeF là explicit reference validation.** |
@@ -22,6 +22,7 @@
 | 3.3 | 2026-09-10 | Loại SSI FastConnect khỏi kiến trúc đang hoạt động; chuyển sang SSI-Free. |
 | 3.4 | 2026-09-13 | Yêu cầu auto-refresh khi chạy app: sync-if-stale, cache, fail-safe; CSV/XLSX chỉ còn fallback/debug. |
 | **3.5** | **2026-09-13** | **DNSE-first auto-sync: DNSE read-only adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. Chưa claim live-data validation.** |
+| **3.5.1** | **2026-09-13** | **Thống nhất lifecycle admission CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED, evidence được persist và kiểm tra hạn review trước khi chọn real provider.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1066,13 +1067,13 @@ independent validation plan
 owner + reviewed_at + next_review_at
 ```
 
-Admission states:
+Lifecycle admission authoritative `[GUESS]`:
 
 ```text
-RESEARCH_ONLY -> QUARANTINED -> VALIDATION -> ADMITTED -> SUSPENDED/RETIRED
+CANDIDATE -> DOCTOR_PASSED -> CROSS_VALIDATED -> ADMITTED
 ```
 
-HTTP 200 không đồng nghĩa provider được admitted.
+Provider có thể chuyển sang `SUSPENDED` hoặc `RETIRED`, nhưng không được bỏ qua forward gate. Record review được persist phải đầy đủ và chưa hết hạn khi select. `DOCTOR_PASSED` cần doctor report có ngày; `CROSS_VALIDATED` cần independent cross-validation report có ngày; `ADMITTED` cần cả hai. Undocumented endpoint và synthetic/test provider không bao giờ đủ điều kiện admission. HTTP 200 hoặc Boolean `documented_access=True` không phải admission evidence.
 
 ## 25.3. Canonical-field routing `[GUESS]`
 
