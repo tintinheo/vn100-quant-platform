@@ -28,7 +28,11 @@ class ProviderNotAllowed(ProviderRegistryError):
 
 
 class ProviderState(str, Enum):
+    """Governed admission lifecycle; only ``ADMITTED`` is runtime-selectable."""
+
     CANDIDATE = "CANDIDATE"
+    DOCTOR_PASSED = "DOCTOR_PASSED"
+    CROSS_VALIDATED = "CROSS_VALIDATED"
     ADMITTED = "ADMITTED"
     RESEARCH_ONLY = "RESEARCH_ONLY"
     RETIRED = "RETIRED"
