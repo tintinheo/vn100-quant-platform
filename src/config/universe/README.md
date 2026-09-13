@@ -1,6 +1,6 @@
 # Point-in-time VN100 universe
 
-`current VN100` can be queried from SSI FastConnect v3 (`get_securities_info_by_index("VN100")`).
+Current VN100 membership may be queried only through an explicitly selected provider after that provider passes Source Admission. No automated provider is currently admitted.
 Historical backtests MUST NOT pretend current membership was valid in the past.
 
 For strict backtests, add verified effective-dated snapshots as CSV files with:

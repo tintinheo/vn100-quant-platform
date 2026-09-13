@@ -8,7 +8,7 @@
 | Supersedes | `SRD-VN100-Quant-Platform-v3.2-MULTI-SOURCE-GOVERNANCE.md` |
 | Companion | `BRD — VN100 Quant Platform` (document 1 of 2) — **read that first** |
 | Basis | v3.3 source-governance architecture + product-owner decision to exclude SSI FastConnect + provider feasibility assessment |
-| Reality check | Existing strategy performance results remain **synthetic**. The delivered executable source is legacy v3.1 and contains SSI-specific code, but SSI is now disabled by product policy. No v3.3 automated provider adapter is implemented or real-data validated. |
+| Reality check | Existing strategy performance results remain **synthetic**. The v3.3 SSI-free runtime migration is **IMPLEMENTED + TESTED_OFFLINE**, but no automated provider is admitted and no provider adapter is real-data validated. |
 
 ---
 
@@ -1690,7 +1690,7 @@ exists to replace.
 
 # 22. KNOWN LIMITATIONS
 
-**The delivered executable code is still the legacy v3.1 Phase-1 implementation even though the documents are now v3.3.** It contains SSI-specific code, but SSI is disabled by product-owner decision and must not be used for real-data ingestion. Therefore there is currently **no v3.3-compliant automated market-data adapter** and no provider-specific real-data validation claim.
+**The executable code has completed the v3.3 SSI-free runtime migration (`IMPLEMENTED + TESTED_OFFLINE`).** SSI is absent from active dependencies, configuration and runtime modules; provider selection is explicit and real-data ingestion fails closed with `NO_ADMITTED_PROVIDER`. There is still **no admitted automated market-data adapter** and no provider-specific real-data validation claim.
 
 **True historical point-in-time VN100 membership is still not present in the delivered data store.** The target source of truth is effective-dated HOSE review/rule evidence or another independently verified PIT archive. Historical runs using a current/manual snapshot must stay labelled `CURRENT_UNIVERSE_PROXY`; do not substitute a liquidity reconstruction and call it true VN100 history.
 
@@ -1723,9 +1723,9 @@ unavailable, indefinitely.
 
 ## 23.1. Current code vs v3.3 specification
 
-The companion source package `vnquant_realdata_v3_1` remains the latest **delivered legacy implementation**. It includes an SSI adapter and historically passed **18/18 tests**, but this is no longer the active provider architecture. Under v3.3, the SSI path is disabled and that 18/18 result is retained only as evidence about the legacy codebase, not as proof that the v3.3 data path works.
+The companion source package `vnquant_realdata_v3_1` is retained as **archived legacy implementation evidence**. It includes an SSI adapter and historically passed **18/18 tests**, but it is not the active provider architecture. The active v3.3 source has no SSI module or dependency; the legacy result is not proof that the v3.3 data path works.
 
-v3.3 requires an SSI-free provider registry, `NO_ADMITTED_PROVIDER` state, generic source doctor/bootstrap contracts, Vietstock DataFeed admission work, CafeF/manual-import validation boundaries, reconciliation lineage and mandatory BRD/SRD synchronization. These v3.3 runtime changes are **SPECIFIED, NOT IMPLEMENTED**.
+The SSI-free provider registry, `NO_ADMITTED_PROVIDER` state and generic doctor/bootstrap contracts are **IMPLEMENTED + TESTED_OFFLINE**. Vietstock DataFeed admission, expanded controlled manual-import lineage, and provider-specific real-data validation remain **SPECIFIED, NOT IMPLEMENTED**.
 
 ## 23.2. Verification sources (accessed 2026-09-10)
 
@@ -1798,7 +1798,7 @@ A feature may have several applicable statuses (e.g. `IMPLEMENTED + TESTED_OFFLI
 
 After any material research/assessment change, BRD and SRD share the same project version. Source code is allowed to lag; when it does, the SRD must name the latest executable code version and the missing implementation delta.
 
-**Current state — 2026-09-10:** BRD/SRD = **v3.3 SSI-Free Multi-Source Baseline**; executable code = **legacy v3.1 Phase-1 GPTCode-style implementation**; SSI path = **DISABLED**; v3.3 provider migration/adapters/reconciliation = **SPECIFIED, NOT IMPLEMENTED**.
+**Current state — 2026-09-13:** BRD/SRD = **v3.3 SSI-Free Multi-Source Baseline**; SSI-free executable runtime = **IMPLEMENTED + TESTED_OFFLINE**; SSI path = **RETIRED / ABSENT FROM ACTIVE RUNTIME**; provider adapters/reconciliation = **SPECIFIED, NOT IMPLEMENTED**; real-data validation = **NOT PERFORMED**.
 
 
 # 25. SSI-FREE RUNTIME MIGRATION CONTRACT `[GUESS]`
@@ -1830,7 +1830,7 @@ test_pit_universe_requires_effective_dating
 
 ## 25.3. Status
 
-`SPECIFIED`. No v3.3-compliant executable build has yet been produced or real-data validated.
+`IMPLEMENTED + TESTED_OFFLINE` for dependency removal, generic registry, explicit selection, mode isolation and fail-closed runtime behavior. Controlled manual-import lineage and provider-specific adapters remain `SPECIFIED`; no real-data validation has been performed.
 
 
 
