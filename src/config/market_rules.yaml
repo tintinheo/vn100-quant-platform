@@ -1,0 +1,18 @@
+# v3.1 verified/corrected baseline; version by effective date in production.
+HOSE:
+  price_band: 0.07
+  lot_size: 100
+  tick_rules:
+    - {max_price_exclusive: 10000, tick: 10}
+    - {max_price_exclusive: 50000, tick: 50}
+    - {max_price_exclusive: null, tick: 100}
+HNX:
+  price_band: 0.10
+  lot_size: 100
+UPCOM:
+  price_band: 0.15
+  lot_size: 100
+settlement:
+  equity_cycle: T+2
+  allocation_time_local: "13:00"
+  sellable_same_afternoon: true

@@ -1,0 +1,8 @@
+# Verify against your broker's actual tariff. All rates are decimals.
+# If commission_includes_exchange_fee=true, DO NOT add exchange_fee again.
+broker_name: example
+commission_rate: 0.0015
+commission_includes_exchange_fee: true
+exchange_fee_rate: 0.00027
+sell_tax_rate: 0.001
+slippage_bps: 15
