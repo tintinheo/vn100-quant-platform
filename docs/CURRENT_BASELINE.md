@@ -8,9 +8,9 @@
 - Leading licensed candidate: **Vietstock DataFeed `[GUESS]`**, pending access/contract/schema/rights validation.
 - CafeF: **manual/reference/authorized-export validation by default**; no undocumented production scraping.
 - Official field authority: **HOSE / HNX / VSDC / SSC / issuer disclosures**, field-specific.
-- Executable implementation baseline: **legacy v3.1 Phase-1 GPTCode-style implementation**; contains SSI code and is **not v3.3-compliant for real-data ingestion**.
+- Executable implementation baseline: **v3.3 SSI-free runtime, IMPLEMENTED + TESTED_OFFLINE**; the legacy v3.1 SSI package is archived evidence only.
 - Historical implementation evidence: **18/18 legacy tests passing**; this is not v3.3 provider validation.
-- v3.3 runtime migration: **SPECIFIED, NOT IMPLEMENTED**.
+- v3.3 SSI-free runtime migration: **IMPLEMENTED + TESTED_OFFLINE**; no provider adapter is admitted or real-data validated.
 - Real-data validation: **NOT YET PERFORMED**.
 
 ## Mandatory governance rule

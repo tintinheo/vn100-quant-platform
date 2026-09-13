@@ -1681,7 +1681,7 @@ BRD and SRD **must share the same major/minor project baseline** after a materia
 
 ## 26.4. Current synchronization state
 
-As of **2026-09-10**, BRD and SRD are synchronized at **v3.3 SSI-Free Multi-Source Baseline**. The delivered executable source is still the **legacy v3.1 Phase-1 / GPTCode-style implementation** and contains SSI-specific code; that code path is **DISABLED BY PRODUCT POLICY** and is not compliant with v3.3 for real-data ingestion. Its historical 18/18 test result is retained only as legacy implementation evidence. A v3.3 executable build is not yet implemented or real-data validated.
+As of **2026-09-13**, BRD and SRD are synchronized at **v3.3 SSI-Free Multi-Source Baseline**. The executable source has completed the **v3.3 SSI-free runtime migration (`IMPLEMENTED + TESTED_OFFLINE`)**: the active dependency/configuration and doctor/bootstrap paths are provider-neutral, SSI cannot be registered, and real-data ingestion stops with `NO_ADMITTED_PROVIDER` until an explicitly selected provider passes Source Admission. The legacy v3.1 package remains only as archived implementation evidence. No automated provider is admitted and no real-data validation has been performed.
 
 
 # 27. v3.3 SSI-FREE PROVIDER DECISION
@@ -1700,7 +1700,7 @@ The product owner cannot register for SSI FastConnect and has instructed the pro
 
 ## 27.3. Implementation delta required
 
-The next executable revision must, at minimum, remove SSI from runtime dependencies/configuration, remove SSI-specific first-run instructions, make the provider registry generic, support an explicit `NO_ADMITTED_PROVIDER` state, and ensure the pipeline cannot silently fall back to scraped or synthetic data in real-data mode. `[GUESS]`
+The executable runtime removes SSI from dependencies/configuration and first-run instructions, uses a generic provider registry, exposes the explicit `NO_ADMITTED_PROVIDER` state, requires explicit provider selection, and prevents synthetic providers from satisfying real-data mode. **Status: `IMPLEMENTED + TESTED_OFFLINE` (2026-09-13).** No provider-specific real-data adapter is admitted or validated.
 
 
 

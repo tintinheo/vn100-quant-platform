@@ -38,6 +38,6 @@ def apply_sector_mapping(panel: pd.DataFrame, *, pit_path: str | Path | None = N
         cmap=dict(zip(current_master.symbol.astype(str).str.upper(),current_master.icb_name.fillna("UNKNOWN").astype(str)))
         d["sector"]=d.symbol.astype(str).str.upper().map(cmap).fillna("UNKNOWN")
         return SectorMappingResult(d,SectorMode.CURRENT_ICB_PROXY,
-            "NOT_TRUE_HISTORICAL_SECTOR_CLASSIFICATION: current SSI ICB mapping applied historically")
+            "NOT_TRUE_HISTORICAL_SECTOR_CLASSIFICATION: current provider sector mapping applied historically")
     d["sector"]="UNKNOWN"
     return SectorMappingResult(d,SectorMode.CURRENT_ICB_PROXY,"No sector metadata available")

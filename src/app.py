@@ -3,9 +3,9 @@ import json
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="VNQuant v3.1",layout="wide")
-st.title("VNQuant v3.1 — Real-Data Ready Viewer")
-st.caption("Decision support only. Hosted mode reads sanitized artifacts; it never fetches SSI data or places orders.")
+st.set_page_config(page_title="VNQuant v3.3",layout="wide")
+st.title("VNQuant v3.3 — SSI-Free Viewer")
+st.caption("Decision support only. Hosted mode reads sanitized artifacts; it never fetches provider data or places orders.")
 pub=Path("publish")
 market_file=pub/"market.json"
 if market_file.exists():
@@ -42,7 +42,7 @@ with tabs[2]:
 with tabs[3]:
     st.markdown("""
 - Strategy thresholds marked `[D]` are calibration hypotheses, not facts.
-- SSI integration is market-data only: no Trading client, OTP, or private trading key.
+- No automated market-data provider is currently admitted; real-data commands fail closed.
 - Corporate-action type comes from official disclosure; adjustment ratios are anomaly detectors only.
 - Missing provider bars are not forward-filled into fake OHLC.
 - Elliott Wave is not part of the production score in this build.
