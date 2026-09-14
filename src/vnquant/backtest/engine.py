@@ -4,6 +4,7 @@ import pandas as pd
 from .execution import simulate_buy_limit, simulate_urgent_sell, ExecutionMode
 from vnquant.market.rules import BrokerCostProfile
 from vnquant.market.settlement import regulatory_sellable_date, eod_policy_earliest_exit_fill_date
+from vnquant.config import parameter_value
 
 @dataclass
 class Trade:
@@ -17,9 +18,12 @@ class Attempt:
     entry_date:object|None=None; entry_price:float|None=None; overnight_gap:float|None=None
 
 
-def backtest_pullback_with_audit(df:pd.DataFrame, costs:BrokerCostProfile, *, hold_sessions:int=20,
-                                 premium:float=0.005,max_gap:float=0.02,
+def backtest_pullback_with_audit(df:pd.DataFrame, costs:BrokerCostProfile, *, hold_sessions:int|None=None,
+                                 premium:float|None=None,max_gap:float|None=None,
                                  mode:ExecutionMode=ExecutionMode.CONSERVATIVE)->tuple[pd.DataFrame,pd.DataFrame]:
+    hold_sessions = int(hold_sessions if hold_sessions is not None else parameter_value("backtest.hold_sessions"))
+    premium = float(premium if premium is not None else parameter_value("backtest.entry_premium"))
+    max_gap = float(max_gap if max_gap is not None else parameter_value("backtest.maximum_gap"))
     d=df.sort_values("trading_date").reset_index(drop=True).copy(); sessions=d.trading_date.tolist(); trades=[]; attempts=[]; i=0
     while i < len(d)-4:
         if not bool(d.loc[i].get("signal_pullback",False)): i+=1; continue

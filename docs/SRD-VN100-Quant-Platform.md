@@ -35,6 +35,7 @@
 | **3.5.11** | **2026-09-14** | **Implemented the §§25.2/26.8 offline acceptance harness with deterministic injectable clocks, fake DNSE SDK calls, an injected Vietstock contract fixture, local CafeF HTML, temporary warehouses, raw-order/lineage assertions, idempotence, and concurrent-rerun coverage. Full suite: 99 passed; admission/live-validation status is unchanged.** |
 | **3.5.12** | **2026-09-14** | **Audited every implementation-status statement against tracked contents and reconciled §§23.1, 24.4, 25.3, 26.9, and 27.2: `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` functionality is implemented/offline-tested. Full suite: 99 passed; no admission/live-validation claim.** |
 | **3.5.13** | **2026-09-14** | **Consolidated versioned BRD/SRD copies, standalone version changelogs/reports, and duplicate ZIP bundles into the stable canonical document set. Historical details remain in Git; no software requirement, runtime behavior, provider status, or live-validation status changed.** |
+| **3.5.14** | **2026-09-14** | **Implemented a packaged, schema/version-checked quantitative parameter registry and removed configurable literals/default arguments from DQ, features, market/regime/sector, recommendations and doctor paths. Registry validation requires every unverified default to be `[D] [GUESS]` with an explicit calibration/verification requirement. Full suite: 101 passed offline.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -47,8 +48,12 @@ threshold**. This document specifies how to build the system that implements
 them. It must never derive a threshold of its own — where a number appears
 here, it references the BRD section that defines it.
 
-Tags follow the BRD: `[S]` structural, `[M]` measured, `[A]` academic, `[D]`
-default requiring calibration (equivalent to `[GUESS]` in the v2 SAD).
+Tags follow the BRD: `[S]` structural, `[M]` measured, `[A]` academic, and
+`[D] [GUESS]` for every default not yet verified/calibrated. The executable
+registry is packaged at `src/vnquant/config/quant_parameters.v1.yaml`; its
+loader rejects unknown classifications and any `[D] [GUESS]` entry whose
+requirement omits the literal `[GUESS]`. Call sites may accept explicit test
+overrides but must not duplicate governed defaults in function signatures.
 
 ### 0.1. What changed from the v2 SAD, and why
 

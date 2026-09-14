@@ -1,6 +1,7 @@
 from __future__ import annotations
 import pandas as pd
 from vnquant.features.normalization import cross_sectional_percentile
+from vnquant.config import parameter_value
 
 def compute_sector_scores(panel: pd.DataFrame, as_of=None) -> pd.DataFrame:
     d = panel.copy()
@@ -23,6 +24,6 @@ def compute_sector_scores(panel: pd.DataFrame, as_of=None) -> pd.DataFrame:
     if out.empty: return out
     for c in ("rs20","rs126","breadth","volume_impulse"):
         out[c+"_rank"] = cross_sectional_percentile(out[c]) / 100.0
-    # [D] equal-weight bootstrap; calibration required before real capital.
-    out["leadership_score"] = 100*(0.30*out.rs20_rank + 0.30*out.rs126_rank + 0.25*out.breadth_rank + 0.15*out.volume_impulse_rank)
+    weights = parameter_value("sector.weights")
+    out["leadership_score"] = 100*(float(weights["rs20"])*out.rs20_rank + float(weights["rs126"])*out.rs126_rank + float(weights["breadth"])*out.breadth_rank + float(weights["volume_impulse"])*out.volume_impulse_rank)
     return out.sort_values("leadership_score", ascending=False).reset_index(drop=True)

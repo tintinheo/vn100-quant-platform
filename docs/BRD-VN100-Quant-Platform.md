@@ -35,6 +35,7 @@
 | **3.5.11** | **2026-09-14** | **Implemented the §28.7 offline acceptance suite with fake DNSE SDK responses, injected Vietstock contract data, local CafeF HTML, deterministic time/calendar inputs, concurrency checks, and temporary storage. Full maintained suite: 99 passed; no provider admission or live-data-validation claim.** |
 | **3.5.12** | **2026-09-14** | **Reconciled every implementation-status statement with tracked repository contents: the standalone `vn100_multisource_feed_v1` package is absent, while `src/vnquant/` is the maintained SSI-free implementation and its full suite passes 99 offline tests. No live-validation/admission claim.** |
 | **3.5.13** | **2026-09-14** | **Consolidated the retained v3.3/v3.5 BRD copies and duplicate ZIP bundles into this stable canonical file. Historical wording and withdrawn claims remain recoverable in Git; no business rule, provider status, or live-validation status changed.** |
+| **3.5.14** | **2026-09-14** | **Audited runtime constants/default arguments and moved configurable DQ, feature, regime, sector, recommendation, doctor and slippage values into the versioned `quant_parameters.v1.yaml` registry. Every unverified runtime value is literal `[D] [GUESS]` with a calibration/verification requirement; structural score/base and market-rule identities remain `[S]`. Full suite: 101 passed offline.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1420,6 +1421,17 @@ error produced a crash or an obviously wrong number. That one produced
 
 Approximately **40 parameters require calibration.** Everything else is
 structural, measured or academic.
+
+### 20.5. Executable parameter-governance contract
+
+The maintained runtime registry is `src/vnquant/config/quant_parameters.v1.yaml`.
+Each entry carries a value, the literal classification `[S]`, `[M]`, `[A]`, or
+`[D] [GUESS]`, and an explicit requirement. A newly invented or unverified
+default may not be represented as plain `[D]`: it must also carry `[GUESS]` and
+state the real-data, walk-forward, provider-contract, or authoritative-rule
+evidence required to remove that label. Configuration version must be persisted
+with future recommendation artifacts; moving a constant into YAML does not
+validate it or convert it into alpha evidence.
 
 ---
 

@@ -9,6 +9,7 @@ import pandas as pd
 
 from ..base import DataMode, MarketDataProvider, ProviderFetch
 from .common import ProviderConfigurationError, ProviderResponseError, canonical_frame, unix_seconds
+from vnquant.config import parameter_value
 
 
 class DNSEMarketDataClient(Protocol):
@@ -52,18 +53,18 @@ class DNSEProvider(MarketDataProvider):
         *,
         client_factory: Callable[[], DNSEMarketDataClient] | None = None,
         now: Callable[[], datetime] | None = None,
-        resolution: str = "1D",  # [GUESS]
-        index_name: str = "VN100",  # [GUESS]
+        resolution: str | None = None,
+        index_name: str | None = None,
         field_map: Mapping[str, str] = DEFAULT_DNSE_FIELD_MAP,  # [GUESS]
-        price_multiplier: float = 1.0,  # [GUESS] pending live unit verification
+        price_multiplier: float | None = None,
     ) -> None:
         self._client = client
         self._client_factory = client_factory
         self._now = now or (lambda: datetime.now(timezone.utc))
-        self.resolution = resolution
-        self.index_name = index_name
+        self.resolution = resolution or str(parameter_value("provider.dnse_resolution"))
+        self.index_name = index_name or str(parameter_value("provider.dnse_index_name"))
         self.field_map = dict(field_map)
-        self.price_multiplier = price_multiplier
+        self.price_multiplier = float(price_multiplier if price_multiplier is not None else parameter_value("provider.dnse_price_multiplier"))
 
     @property
     def client(self) -> DNSEMarketDataClient:

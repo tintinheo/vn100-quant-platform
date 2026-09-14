@@ -10,17 +10,23 @@ from vnquant.data.provider_registry import (
     default_provider_registry,
 )
 from vnquant.data.quality import quality_score, validate_bars
+from vnquant.config import parameter_value, parameters_version
 
 
 def run(
     provider_id: str | None = None,
-    symbol: str = "VNM",
-    days: int = 90,
-    index: str = "VN100",
+    symbol: str | None = None,
+    days: int | None = None,
+    index: str | None = None,
     registry: ProviderRegistry | None = None,
 ) -> int:
     """Run a provider-neutral preflight against an admitted real-data source."""
-    print("VNQuant Doctor v3.3 — admitted-provider preflight")
+    symbol = symbol or str(parameter_value("doctor.symbol"))
+    days = int(days if days is not None else parameter_value("doctor.lookback_days"))
+    index = index or str(parameter_value("doctor.index"))
+    calendar_multiplier = int(parameter_value("doctor.calendar_day_multiplier"))
+    sample_size = int(parameter_value("doctor.member_sample_size"))
+    print(f"VNQuant Doctor v3.5 — admitted-provider preflight ({parameters_version()})")
     try:
         provider = (registry or default_provider_registry()).select(
             provider_id=provider_id,
@@ -28,9 +34,9 @@ def run(
             mode=DataMode.REAL,
         )
         members = provider.current_index_members(index)
-        print(f"[1/3] INDEX {index}: {len(members)} members; sample={members[:8]}")
+        print(f"[1/3] INDEX {index}: {len(members)} members; sample={members[:sample_size]}")
         end = date.today()
-        frame = provider.daily_history(symbol, end - timedelta(days=days * 2), end)
+        frame = provider.daily_history(symbol, end - timedelta(days=days * calendar_multiplier), end)
         print(
             f"[2/3] OHLC {symbol}: {len(frame)} rows "
             f"{frame.trading_date.min()}..{frame.trading_date.max()}"
@@ -47,8 +53,8 @@ def run(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--provider")
-    parser.add_argument("--symbol", default="VNM")
-    parser.add_argument("--days", type=int, default=90)
-    parser.add_argument("--index", default="VN100")
+    parser.add_argument("--symbol")
+    parser.add_argument("--days", type=int)
+    parser.add_argument("--index")
     args = parser.parse_args()
     raise SystemExit(run(args.provider, args.symbol, args.days, args.index))

@@ -17,12 +17,13 @@
 - Leading automated market-data candidate: **DNSE OpenAPI `[GUESS]`** — documented and adapter implemented, but **NOT ADMITTED / NOT LIVE VALIDATED**.
 - Licensed secondary/alternative candidate: **Vietstock DataFeed `[GUESS]`** — generic contract-gated adapter implemented; live contract/access pending.
 - CafeF: **reference / explicit opt-in validation**, not a silent production fallback or authoritative VN100-membership source.
-- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 99 offline tests on 2026-09-14.
+- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 101 offline tests on 2026-09-14.
 - Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
 - Provider governance: structured evidence and the enforced `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED` lifecycle now replace the prior boolean access flag; no provider advanced from its prior state.
 - Runtime integration: application startup and the actionable analytics pipeline now consume a persisted governed sync result; absent an admitted provider or accepted cache, candidate generation fails closed with `NO_ADMITTED_PROVIDER`.
 - Data quality: one canonical service now evaluates ingestion/storage observations, persists revision-linked results and synchronization history, and applies the BRD's `[D]` confidence cap (70) and actionable block threshold (50).
 - Real-data validation: **NOT YET PERFORMED**.
+- Parameter governance: configurable analytics/runtime thresholds are packaged in versioned `src/vnquant/config/quant_parameters.v1.yaml`; unverified defaults are `[D] [GUESS]` with explicit calibration or verification requirements, while structural identities remain `[S]`. Offline tested only.
 
 ## Mandatory governance
 
@@ -58,6 +59,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (acceptance suite)** | **2026-09-14** | **Implemented BRD §28.7 and SRD §§25.2/26.8 offline acceptance coverage with deterministic, non-network provider fixtures and temporary storage. Full suite: 99 passed; no provider/admission/live-validation change.** |
 | **3.5 (status reconciliation)** | **2026-09-14** | **Compared all canonical implementation-status statements with tracked contents and reconciled the five documents: standalone `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` is implemented and tested offline (99 passed). No live-validation/admission change.** |
 | **3.5 (document consolidation)** | **2026-09-14** | **Compared the retained versioned BRD/SRD copies and both byte-identical ZIP bundles with the stable specifications, retained their history in canonical change logs and Git, and removed the redundant aliases/artifacts. No requirement, implementation, provider-admission or live-validation change.** |
+| **3.5 (parameter governance)** | **2026-09-14** | **Audited runtime constants/defaults and introduced a packaged versioned parameter registry with enforced classifications and literal `[GUESS]` calibration/verification requirements. Full suite: 101 passed offline; no provider/admission/live-validation change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

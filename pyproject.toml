@@ -22,7 +22,10 @@ test = ["pytest>=8,<10"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-include-package-data = false
+include-package-data = true
+
+[tool.setuptools.package-data]
+"vnquant.config" = ["*.yaml"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
