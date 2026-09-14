@@ -71,7 +71,7 @@ def admit(registry: ProviderRegistry, provider: MarketDataProvider) -> None:
 
 
 @pytest.mark.parametrize("provider_id", ["ssi", "ssi_fastconnect", "ssi_fastconnect_v3"])
-def test_ssi_cannot_become_active_accidentally(provider_id):
+def test_retirement_policy_rejects_ssi_provider_ids(provider_id):
     registry = ProviderRegistry()
 
     with pytest.raises(ProviderNotAllowed, match="retired provider"):
@@ -81,7 +81,7 @@ def test_ssi_cannot_become_active_accidentally(provider_id):
         )
 
 
-def test_application_starts_without_ssi_credentials(monkeypatch, capsys):
+def test_retirement_policy_startup_does_not_require_ssi_credentials(monkeypatch, capsys):
     for name in ("SSI_CLIENT_ID", "SSI_API_KEY", "SSI_API_SECRET"):
         monkeypatch.delenv(name, raising=False)
 
@@ -159,8 +159,14 @@ def test_invalid_transition_and_suspension_require_revalidation_path():
     assert registry.registration(provider.provider_id).state is ProviderState.CANDIDATE
 
 
-def test_no_ssi_runtime_dependency_or_module():
+def test_retirement_policy_active_requirements_exclude_ssi_sdk():
     source_root = Path(__file__).parents[1]
 
-    assert "ssi-sdk" not in (source_root / "requirements-local.txt").read_text().lower()
+    for requirements in ("requirements.txt", "requirements-local.txt"):
+        assert "ssi-sdk" not in (source_root / requirements).read_text().lower()
+
+
+def test_retirement_policy_active_source_excludes_ssi_adapter():
+    source_root = Path(__file__).parents[1]
+
     assert not (source_root / "vnquant" / "data" / "ssi.py").exists()
