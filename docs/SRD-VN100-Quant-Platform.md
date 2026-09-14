@@ -26,6 +26,7 @@
 | **3.5.2** | **2026-09-13** | **Implemented persisted source-sync orchestration for startup and actionable pipeline execution, explicit stale/degraded cache metadata, and fail-closed candidate gating.** |
 | **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible offline result and made `src/vnquant/` the documented implementation path. No live-validation/admission change.** |
 | **3.5.4** | **2026-09-14** | **Completed the provider contract guardrails: DNSE is explicitly read-only with all unverified live assumptions tagged `[GUESS]`; Vietstock validates endpoint semantics and retention rights before I/O; CafeF is ineligible for admission.** |
+| **3.5.5** | **2026-09-14** | **Implemented structured admission evidence, evidence-gated lifecycle transitions, suspension/revalidation, and regression coverage for incomplete or ineligible sources.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -495,6 +496,16 @@ The exact Vietstock schema/capabilities are `TBD` until commercial documentation
 
 Production admission requires evidence for access rights, schema semantics, timezone/trading-date rules, units, raw/adjusted treatment, revision behaviour, lineage capture and an independent validation plan. Failure of any gate is a **hard stop for canonical writes**, not an invitation to scrape another site silently.
 
+The maintained registry implements immutable `AdmissionEvidence` and
+`ValidationResult` records covering access basis, licence reference, every
+declared capability, schema/units, timezone/date semantics, raw-versus-adjusted
+policy, revision behavior, quotas, lineage, validation results, owner, and
+ordered review dates. Legal transitions are `CANDIDATE -> DOCTOR_PASSED ->
+CROSS_VALIDATED -> ADMITTED`, active-state transitions to
+`SUSPENDED`/`RETIRED`, `SUSPENDED -> CANDIDATE|RETIRED`, and `RESEARCH_ONLY ->
+RETIRED`; all others fail closed. Contract completeness and real-data/provider
+role eligibility are checked before promotion.
+
 ## 6.1B. Provider fallback is explicit, never silent `[GUESS]`
 
 ```text
@@ -716,7 +727,10 @@ provider_snapshots(snapshot_id, provider, requested_at, request_json,
                    payload_sha256, adapter_version, storage_path);
 
 source_admission(provider_id, trust_tier, state, access_basis,
-                 terms_ref, schema_version, capabilities_json,
+                 licence_ref, capabilities_json, schema_units,
+                 timezone_date_semantics, raw_adjusted_policy,
+                 revision_behavior, quotas, lineage_method,
+                 validation_results_json, owner,
                  reviewed_at, next_review_at, policy_version);
 
 provider_observations(provider_id, provider_revision, symbol, ts, field,
@@ -2101,7 +2115,7 @@ Validation of maintained code must instead be run from `src/` using its checked-
 ```text
 cd src
 python -m compileall -q vnquant             PASS
-python -m pytest -q                          56 passed (2026-09-14)
+python -m pytest -q                          60 passed (2026-09-14)
 ```
 
 Such fixture/offline tests prove implementation mechanics only; they do not establish external API availability, live schema correctness, data accuracy, trading alpha, Source Admission, or `REAL_DATA_VALIDATED` status.

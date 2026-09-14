@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
+from datetime import date
 from enum import Enum
+from types import MappingProxyType
+from typing import Mapping
 
 from .base import DataMode, MarketDataProvider
+from .providers.common import ProviderConfigurationError
 
 NO_ADMITTED_PROVIDER = "NO_ADMITTED_PROVIDER"
 
@@ -34,25 +38,109 @@ class ProviderState(str, Enum):
     DOCTOR_PASSED = "DOCTOR_PASSED"
     CROSS_VALIDATED = "CROSS_VALIDATED"
     ADMITTED = "ADMITTED"
+    SUSPENDED = "SUSPENDED"
     RESEARCH_ONLY = "RESEARCH_ONLY"
     RETIRED = "RETIRED"
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    """Auditable result supporting one admission milestone."""
+
+    check: str
+    passed: bool
+    evidence_reference: str
+    validated_at: date
+
+
+@dataclass(frozen=True)
+class AdmissionEvidence:
+    """Versionable evidence required before a real provider can be admitted.
+
+    Empty fields explicitly represent evidence gaps for candidates; they never
+    act as permissive defaults. ``missing_requirements`` is the fail-closed gate.
+    """
+
+    access_basis: str = ""
+    licence_reference: str = ""
+    capability_definitions: Mapping[str, str] = field(default_factory=dict)
+    schema_and_units: str = ""
+    timezone_date_semantics: str = ""
+    raw_adjusted_policy: str = ""
+    revision_behavior: str = ""
+    quotas: str = ""
+    lineage_method: str = ""
+    validation_results: tuple[ValidationResult, ...] = ()
+    owner: str = ""
+    reviewed_at: date | None = None
+    next_review_at: date | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "capability_definitions", MappingProxyType(dict(self.capability_definitions))
+        )
+        object.__setattr__(self, "validation_results", tuple(self.validation_results))
+
+    def missing_requirements(self, capabilities: frozenset[str]) -> tuple[str, ...]:
+        values = {
+            "access_basis": self.access_basis,
+            "licence_reference": self.licence_reference,
+            "schema_and_units": self.schema_and_units,
+            "timezone_date_semantics": self.timezone_date_semantics,
+            "raw_adjusted_policy": self.raw_adjusted_policy,
+            "revision_behavior": self.revision_behavior,
+            "quotas": self.quotas,
+            "lineage_method": self.lineage_method,
+            "validation_results": self.validation_results,
+            "owner": self.owner,
+            "reviewed_at": self.reviewed_at,
+            "next_review_at": self.next_review_at,
+        }
+        missing = [name for name, value in values.items() if not value]
+        undefined = capabilities.difference(self.capability_definitions)
+        if undefined:
+            missing.append(f"capability_definitions[{','.join(sorted(undefined))}]")
+        if (
+            self.reviewed_at is not None
+            and self.next_review_at is not None
+            and self.next_review_at <= self.reviewed_at
+        ):
+            missing.append("next_review_at_after_reviewed_at")
+        return tuple(missing)
+
+    def passed(self, check: str) -> bool:
+        return any(
+            result.check == check and result.passed and bool(result.evidence_reference.strip())
+            for result in self.validation_results
+        )
 
 
 @dataclass(frozen=True)
 class ProviderRegistration:
     provider: MarketDataProvider
     state: ProviderState
-    documented_access: bool
+    evidence: AdmissionEvidence
 
 
 class ProviderRegistry:
-    """Explicit provider admission and runtime selection boundary.
-
-    The default registry is deliberately empty. Registration never implies
-    admission, and a real-data caller must name an admitted provider.
-    """
+    """Explicit, evidence-backed provider admission and selection boundary."""
 
     _RETIRED_PROVIDER_IDS = frozenset({"ssi", "ssi_fastconnect", "ssi_fastconnect_v3"})
+    _TRANSITIONS = {
+        ProviderState.CANDIDATE: frozenset(
+            {ProviderState.DOCTOR_PASSED, ProviderState.SUSPENDED, ProviderState.RETIRED}
+        ),
+        ProviderState.DOCTOR_PASSED: frozenset(
+            {ProviderState.CROSS_VALIDATED, ProviderState.SUSPENDED, ProviderState.RETIRED}
+        ),
+        ProviderState.CROSS_VALIDATED: frozenset(
+            {ProviderState.ADMITTED, ProviderState.SUSPENDED, ProviderState.RETIRED}
+        ),
+        ProviderState.ADMITTED: frozenset({ProviderState.SUSPENDED, ProviderState.RETIRED}),
+        ProviderState.SUSPENDED: frozenset({ProviderState.CANDIDATE, ProviderState.RETIRED}),
+        ProviderState.RESEARCH_ONLY: frozenset({ProviderState.RETIRED}),
+        ProviderState.RETIRED: frozenset(),
+    }
 
     def __init__(self) -> None:
         self._registrations: dict[str, ProviderRegistration] = {}
@@ -68,34 +156,83 @@ class ProviderRegistry:
         self,
         provider: MarketDataProvider,
         *,
+        evidence: AdmissionEvidence,
         state: ProviderState = ProviderState.CANDIDATE,
-        documented_access: bool = False,
     ) -> None:
         provider_id = self._provider_id(provider)
         if provider_id in self._RETIRED_PROVIDER_IDS or provider_id.startswith("ssi_"):
             raise ProviderNotAllowed(f"retired provider {provider_id!r} cannot be registered")
-        if state is ProviderState.ADMITTED and getattr(provider, "reference_only", False):
-            raise ProviderNotAllowed("a reference-only provider cannot be admitted")
-        if state is ProviderState.ADMITTED and not documented_access:
-            raise ProviderNotAllowed("an undocumented provider cannot be admitted")
-        self._registrations[provider_id] = ProviderRegistration(
-            provider=provider,
-            state=state,
-            documented_access=documented_access,
+        if state not in {ProviderState.CANDIDATE, ProviderState.RESEARCH_ONLY}:
+            raise ProviderNotAllowed("new providers must start as CANDIDATE or RESEARCH_ONLY")
+        self._registrations[provider_id] = ProviderRegistration(provider, state, evidence)
+
+    def update_evidence(self, provider_id: str, evidence: AdmissionEvidence) -> None:
+        registration = self.registration(provider_id)
+        if registration.state is ProviderState.RETIRED:
+            raise ProviderNotAllowed("retired provider evidence cannot be changed")
+        self._registrations[provider_id.strip().lower()] = replace(
+            registration, evidence=evidence
         )
+
+    def transition(self, provider_id: str, target: ProviderState) -> None:
+        normalized = provider_id.strip().lower()
+        registration = self.registration(normalized)
+        if target not in self._TRANSITIONS[registration.state]:
+            raise ProviderNotAllowed(
+                f"invalid provider transition {registration.state.value} -> {target.value}"
+            )
+        if target in {
+            ProviderState.DOCTOR_PASSED,
+            ProviderState.CROSS_VALIDATED,
+            ProviderState.ADMITTED,
+        }:
+            self._validate_promotion(registration, target)
+        self._registrations[normalized] = replace(registration, state=target)
+
+    @staticmethod
+    def _validate_promotion(
+        registration: ProviderRegistration, target: ProviderState
+    ) -> None:
+        provider = registration.provider
+        if provider.data_mode is not DataMode.REAL:
+            raise ProviderNotAllowed("synthetic/test providers cannot enter admission states")
+        if getattr(provider, "reference_only", False):
+            raise ProviderNotAllowed("a reference-only provider cannot enter admission states")
+
+        contract = getattr(provider, "contract", None)
+        if contract is not None and callable(getattr(contract, "validate", None)):
+            try:
+                contract.validate()
+            except ProviderConfigurationError as error:
+                raise ProviderNotAllowed(f"provider contract is incomplete: {error}") from error
+
+        evidence = registration.evidence
+        missing = evidence.missing_requirements(provider.capabilities)
+        if missing:
+            raise ProviderNotAllowed("incomplete admission evidence: " + ", ".join(missing))
+        required_check = {
+            ProviderState.DOCTOR_PASSED: "doctor",
+            ProviderState.CROSS_VALIDATED: "cross_validation",
+            ProviderState.ADMITTED: "cross_validation",
+        }[target]
+        if not evidence.passed(required_check):
+            raise ProviderNotAllowed(
+                f"passing {required_check!r} validation evidence is required"
+            )
 
     def admitted_provider_ids(self, capability: str) -> tuple[str, ...]:
         return tuple(
             provider_id
             for provider_id, registration in self._registrations.items()
             if registration.state is ProviderState.ADMITTED
-            and registration.documented_access
+            and not registration.evidence.missing_requirements(
+                registration.provider.capabilities
+            )
             and registration.provider.data_mode is DataMode.REAL
             and capability in registration.provider.capabilities
         )
 
     def registration(self, provider_id: str) -> ProviderRegistration:
-        """Expose immutable governance metadata without deriving state from I/O."""
         normalized = provider_id.strip().lower()
         registration = self._registrations.get(normalized)
         if registration is None:
@@ -140,19 +277,33 @@ class ProviderRegistry:
 
 
 def default_provider_registry() -> ProviderRegistry:
-    """Return implemented providers in policy-safe, non-admitted states."""
+    """Return implemented providers with explicit evidence gaps and no admission."""
     from .providers import CafeFReferenceProvider, DNSEProvider, VietstockDataFeedProvider
 
     registry = ProviderRegistry()
-    registry.register(DNSEProvider(), state=ProviderState.CANDIDATE, documented_access=True)
     registry.register(
-        VietstockDataFeedProvider(),
-        state=ProviderState.CANDIDATE,
-        documented_access=False,
+        DNSEProvider(),
+        evidence=AdmissionEvidence(
+            access_basis="official public OpenAPI documentation",
+            licence_reference="DNSE API Platform terms/access agreement review pending",
+            capability_definitions={
+                "daily_ohlcv": "documented OHLC endpoint; live schema unverified [GUESS]",
+                "current_index_members": "instrument index filter; VN100 literal unverified [GUESS]",
+            },
+            owner="data-platform owner",
+        ),
     )
+    registry.register(VietstockDataFeedProvider(), evidence=AdmissionEvidence())
     registry.register(
         CafeFReferenceProvider(),
         state=ProviderState.RESEARCH_ONLY,
-        documented_access=False,
+        evidence=AdmissionEvidence(
+            access_basis="public reference pages; automated production rights unverified",
+            licence_reference="CafeF page reference-use notice",
+            capability_definitions={
+                "reference_daily_ohlcv": "explicit opt-in HTML reference comparison"
+            },
+            owner="data-platform owner",
+        ),
     )
     return registry

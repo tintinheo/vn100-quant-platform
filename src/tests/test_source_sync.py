@@ -5,7 +5,12 @@ from datetime import date
 import pandas as pd
 
 from vnquant.data.base import DataMode, MarketDataProvider
-from vnquant.data.provider_registry import ProviderRegistry, ProviderState
+from vnquant.data.provider_registry import (
+    AdmissionEvidence,
+    ProviderRegistry,
+    ProviderState,
+    ValidationResult,
+)
 from vnquant.data.source_sync import SourceSyncOrchestrator, SyncMode
 from vnquant.jobs.pipeline import run as run_pipeline
 
@@ -34,7 +39,26 @@ class CountingProvider(MarketDataProvider):
 
 def registry_for(provider):
     registry = ProviderRegistry()
-    registry.register(provider, state=ProviderState.ADMITTED, documented_access=True)
+    evidence = AdmissionEvidence(
+        access_basis="test agreement", licence_reference="TEST-LICENCE",
+        capability_definitions={
+            "daily_ohlcv": "test daily bars",
+            "current_index_members": "test current members",
+        },
+        schema_and_units="test schema; VND/shares",
+        timezone_date_semantics="Asia/Ho_Chi_Minh exchange date",
+        raw_adjusted_policy="raw", revision_behavior="immutable test snapshots",
+        quotas="test quota", lineage_method="test payload hash", owner="test owner",
+        reviewed_at=date(2026, 9, 14), next_review_at=date(2027, 9, 14),
+        validation_results=(
+            ValidationResult("doctor", True, "test-doctor", date(2026, 9, 14)),
+            ValidationResult("cross_validation", True, "test-cross", date(2026, 9, 14)),
+        ),
+    )
+    registry.register(provider, evidence=evidence)
+    registry.transition(provider.provider_id, ProviderState.DOCTOR_PASSED)
+    registry.transition(provider.provider_id, ProviderState.CROSS_VALIDATED)
+    registry.transition(provider.provider_id, ProviderState.ADMITTED)
     return registry
 
 

@@ -26,6 +26,7 @@
 | **3.5.2** | **2026-09-13** | **Integrated the persisted `SourceSyncOrchestrator` below app/pipeline entry points, cache-lineage visibility, and fail-closed recommendation gating. Offline tests only; provider admission is unchanged.** |
 | **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible 10/10 claim and recorded `src/vnquant/` as the maintained implementation path. Live-validation/admission status is unchanged.** |
 | **3.5.4** | **2026-09-14** | **Hardened provider boundaries: Vietstock now requires endpoint semantics and retention rights in addition to the other authorized contract fields, CafeF cannot be admitted, and all DNSE live assumptions remain `[GUESS]`. Provider admission status is unchanged.** |
+| **3.5.5** | **2026-09-14** | **Replaced the registry's documented-access flag with structured admission evidence and an enforced lifecycle. No admission/live-validation status changed.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1643,7 +1644,15 @@ independent validation plan
 owner + reviewed_at + next_review_at
 ```
 
-`[GUESS]` Admission states: `RESEARCH_ONLY -> QUARANTINED -> VALIDATION -> ADMITTED -> SUSPENDED/RETIRED`.
+`[GUESS]` Admission lifecycle: `CANDIDATE -> DOCTOR_PASSED -> CROSS_VALIDATED -> ADMITTED`; active states may transition to `SUSPENDED` or `RETIRED`, a suspended provider must return to `CANDIDATE` for revalidation, and `RETIRED` is terminal. `RESEARCH_ONLY` may only transition to `RETIRED`. Direct `CANDIDATE -> ADMITTED` promotion is forbidden.
+
+The registry stores access basis, licence reference, definitions for every
+declared capability, schema and units, timezone/trading-date semantics,
+raw-versus-adjusted policy, revision behavior, quotas, lineage method,
+referenced validation results, owner, and review/next-review dates. Missing or
+inconsistent evidence is a hard stop. Synthetic/test providers, reference-only
+providers, undocumented sources, and incomplete authorized contracts cannot
+enter admission states.
 
 No provider can auto-promote itself because the endpoint returned HTTP 200.
 
@@ -1883,7 +1892,7 @@ Vietstock DataFeed remains a strong licensed feed candidate, especially for broa
 
 A repository audit on 2026-09-14 found no package, tests, packaging files, or examples for `vn100_multisource_feed_v1` in the working tree, Git history, or committed archives. The standalone artifact was therefore **never committed to this repository**, and its former `10/10 PASS` claim is withdrawn as unreproducible.
 
-The maintained implementation is instead integrated under `src/vnquant/`, with tests under `src/tests/`. DNSE/Vietstock/CafeF providers and source-sync logic exist there; the full integrated suite run from `src/` passed 56 offline tests on 2026-09-14. The list below describes the intended contract of the missing artifact, not a delivered standalone package:
+The maintained implementation is instead integrated under `src/vnquant/`, with tests under `src/tests/`. DNSE/Vietstock/CafeF providers and source-sync logic exist there; the full integrated suite run from `src/` passed 60 offline tests on 2026-09-14. The list below describes the intended contract of the missing artifact, not a delivered standalone package:
 
 Intended components:
 

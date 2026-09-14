@@ -26,6 +26,7 @@
 | **3.5.2** | **2026-09-13** | **Tích hợp `SourceSyncOrchestrator` persisted dưới app/pipeline, hiển thị cache lineage và chặn recommendation theo fail-closed. Chỉ offline-tested; trạng thái provider admission không đổi.** |
 | **3.5.3** | **2026-09-14** | **Repository audit xác nhận `vn100_multisource_feed_v1` chưa từng được commit; bỏ claim 10/10 không thể tái lập và ghi nhận `src/vnquant/` là implementation path được duy trì. Không thay đổi trạng thái live validation/admission.** |
 | **3.5.4** | **2026-09-14** | **Siết chặt provider boundary: Vietstock bắt buộc khai báo endpoint semantics và retention rights cùng các trường authorized contract khác, CafeF không thể được admitted, và mọi live assumption của DNSE vẫn là `[GUESS]`. Trạng thái provider admission không đổi.** |
+| **3.5.5** | **2026-09-14** | **Thay cờ documented-access bằng hồ sơ admission evidence có cấu trúc và lifecycle bắt buộc. Không thay đổi trạng thái admission/live validation.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1070,11 +1071,21 @@ independent validation plan
 owner + reviewed_at + next_review_at
 ```
 
-Admission states:
+Admission lifecycle:
 
 ```text
-RESEARCH_ONLY -> QUARANTINED -> VALIDATION -> ADMITTED -> SUSPENDED/RETIRED
+CANDIDATE -> DOCTOR_PASSED -> CROSS_VALIDATED -> ADMITTED
+active state -> SUSPENDED/RETIRED
+SUSPENDED -> CANDIDATE/RETIRED; RESEARCH_ONLY -> RETIRED
 ```
+
+Cấm promotion trực tiếp `CANDIDATE -> ADMITTED`; `RETIRED` là trạng thái cuối.
+Registry phải lưu access basis, licence reference, định nghĩa từng capability,
+schema và units, timezone/trading-date semantics, raw-versus-adjusted policy,
+revision behavior, quotas, lineage method, validation results có evidence
+reference, owner và ngày review/next review. Evidence thiếu/mâu thuẫn,
+synthetic/test provider, reference-only/undocumented source hoặc authorized
+contract chưa đầy đủ đều bị fail closed trước admission.
 
 HTTP 200 không đồng nghĩa provider được admitted.
 
@@ -1311,7 +1322,7 @@ Vietstock DataFeed vẫn là licensed feed candidate mạnh cho normalized finan
 
 Audit repository ngày 2026-09-14 không tìm thấy package, tests, packaging files hoặc examples của `vn100_multisource_feed_v1` trong working tree, Git history hay các archive đã commit. Vì vậy artifact độc lập này **chưa từng được commit trong repository này** và claim `10/10 tests PASS` trước đây không thể tái lập nên đã bị rút lại.
 
-Implementation được duy trì hiện nằm tại `src/vnquant/`, với tests tại `src/tests/`. Các provider DNSE/Vietstock/CafeF và source-sync logic đã được tích hợp ở đó; full integrated suite chạy từ `src/` đã pass 56 tests offline ngày 2026-09-14. Danh sách dưới đây chỉ mô tả contract dự kiến của artifact bị thiếu, không phải package đã giao:
+Implementation được duy trì hiện nằm tại `src/vnquant/`, với tests tại `src/tests/`. Các provider DNSE/Vietstock/CafeF và source-sync logic đã được tích hợp ở đó; full integrated suite chạy từ `src/` đã pass 60 tests offline ngày 2026-09-14. Danh sách dưới đây chỉ mô tả contract dự kiến của artifact bị thiếu, không phải package đã giao:
 
 Module dự kiến gồm:
 
