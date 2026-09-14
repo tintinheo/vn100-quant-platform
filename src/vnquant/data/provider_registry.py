@@ -74,6 +74,8 @@ class ProviderRegistry:
         provider_id = self._provider_id(provider)
         if provider_id in self._RETIRED_PROVIDER_IDS or provider_id.startswith("ssi_"):
             raise ProviderNotAllowed(f"retired provider {provider_id!r} cannot be registered")
+        if state is ProviderState.ADMITTED and getattr(provider, "reference_only", False):
+            raise ProviderNotAllowed("a reference-only provider cannot be admitted")
         if state is ProviderState.ADMITTED and not documented_access:
             raise ProviderNotAllowed("an undocumented provider cannot be admitted")
         self._registrations[provider_id] = ProviderRegistration(

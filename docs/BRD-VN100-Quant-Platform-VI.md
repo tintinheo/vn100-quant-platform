@@ -25,6 +25,7 @@
 | **3.5.1** | **2026-09-13** | **Tích hợp provider implementations ổn định tại `src/vnquant/data/providers/` và đăng ký mặc định ở trạng thái chưa admitted; HTTP success không đồng nghĩa Source Admission. Chưa claim live-data validation.** |
 | **3.5.2** | **2026-09-13** | **Tích hợp `SourceSyncOrchestrator` persisted dưới app/pipeline, hiển thị cache lineage và chặn recommendation theo fail-closed. Chỉ offline-tested; trạng thái provider admission không đổi.** |
 | **3.5.3** | **2026-09-14** | **Repository audit xác nhận `vn100_multisource_feed_v1` chưa từng được commit; bỏ claim 10/10 không thể tái lập và ghi nhận `src/vnquant/` là implementation path được duy trì. Không thay đổi trạng thái live validation/admission.** |
+| **3.5.4** | **2026-09-14** | **Siết chặt provider boundary: Vietstock bắt buộc khai báo endpoint semantics và retention rights cùng các trường authorized contract khác, CafeF không thể được admitted, và mọi live assumption của DNSE vẫn là `[GUESS]`. Trạng thái provider admission không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 

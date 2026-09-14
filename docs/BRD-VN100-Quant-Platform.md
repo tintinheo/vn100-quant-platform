@@ -25,6 +25,7 @@
 | **3.5.1** | **2026-09-13** | **Integrated stable `src/vnquant/data/providers/` implementations and default non-admitted registry entries; HTTP success remains separate from Source Admission. No live-data validation claim.** |
 | **3.5.2** | **2026-09-13** | **Integrated the persisted `SourceSyncOrchestrator` below app/pipeline entry points, cache-lineage visibility, and fail-closed recommendation gating. Offline tests only; provider admission is unchanged.** |
 | **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible 10/10 claim and recorded `src/vnquant/` as the maintained implementation path. Live-validation/admission status is unchanged.** |
+| **3.5.4** | **2026-09-14** | **Hardened provider boundaries: Vietstock now requires endpoint semantics and retention rights in addition to the other authorized contract fields, CafeF cannot be admitted, and all DNSE live assumptions remain `[GUESS]`. Provider admission status is unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

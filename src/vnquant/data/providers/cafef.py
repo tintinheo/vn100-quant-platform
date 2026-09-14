@@ -16,6 +16,7 @@ class CafeFReferenceProvider(MarketDataProvider):
     capabilities = frozenset({"reference_daily_ohlcv"})
     data_mode = DataMode.REAL
     reference_only = True
+    primary_eligible = False
 
     def __init__(
         self,

@@ -18,8 +18,10 @@ class DNSEMarketDataClient(Protocol):
     def get_ohlc(self, **kwargs: Any) -> Any: ...
 
 
-# [GUESS] Live DNSE resolution, response schema, units, quota behavior, and the
-# accepted VN100 index-name literal remain unverified. All are injectable.
+# [GUESS] Live DNSE resolution, accepted VN100 index-name literal, response
+# schema, units, available history depth, and quota/rate-limit behavior remain
+# unverified. The request/schema/unit assumptions used here are injectable; the
+# adapter must not be admitted until each assumption has supporting evidence.
 DEFAULT_DNSE_FIELD_MAP = {
     "symbol": "symbol",
     "trading_date": "time",
@@ -37,6 +39,7 @@ class DNSEProvider(MarketDataProvider):
     provider_id = "dnse_openapi"
     capabilities = frozenset({"daily_ohlcv", "current_index_members"})
     data_mode = DataMode.REAL
+    read_only = True
 
     def __init__(
         self,

@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.2 — 2026-09-14**
+**Current internal revision:** **1.3 — 2026-09-14**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -14,6 +14,7 @@
 | **1.0** | **2026-09-13** | **Verified DNSE documented OpenAPI/SDK; retained Vietstock as contract-gated candidate; CafeF as explicit reference source; recorded a standalone-module delivery claim later withdrawn by revision 1.2.** |
 | **1.1** | **2026-09-13** | **Integrated the three adapters into the stable `vnquant` package with non-admitted default registry states and offline admission-separation tests; provider evidence is unchanged.** |
 | **1.2** | **2026-09-14** | **Audit found the referenced `vn100_multisource_feed_v1` artifact was never committed; withdrew its unreproducible test claim and identified `src/vnquant/` as maintained implementation. Provider evidence/admission is unchanged.** |
+| **1.3** | **2026-09-14** | **Hardened the maintained adapters so Vietstock requires endpoint semantics and retention rights before I/O and CafeF cannot be promoted from reference-only status. DNSE assumptions and provider evidence/admission are unchanged.** |
 
 ## 1. Kết luận
 
@@ -62,7 +63,7 @@ Implementation được duy trì nằm tại `src/vnquant/`, với integrated te
 
 ## 4.1. Stable-package integration
 
-The providers are now also implemented under `src/vnquant/data/providers/` and connected to `provider_registry.py`. DNSE exposes only read-only market-data operations; Vietstock validates every authorized-contract field before I/O; CafeF is disabled/reference-only. All default registrations remain non-admitted, and successful fixture/HTTP mechanics cannot mutate admission state. Status remains **OFFLINE_TESTED / NOT LIVE VALIDATED / NOT ADMITTED**.
+The providers are now also implemented under `src/vnquant/data/providers/` and connected to `provider_registry.py`. DNSE exposes only read-only market-data operations; Vietstock validates endpoint/authentication/schema/units/revision/rate-limit/retention/usage contract fields before I/O; CafeF is disabled/reference-only and cannot be admitted. All default registrations remain non-admitted, and successful fixture/HTTP mechanics cannot mutate admission state. Status remains **OFFLINE_TESTED / NOT LIVE VALIDATED / NOT ADMITTED**.
 
 ## 5. `[GUESS]` operational defaults
 
