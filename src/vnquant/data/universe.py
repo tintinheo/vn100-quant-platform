@@ -9,7 +9,7 @@ class UniverseMode(str, Enum):
     STRICT_PIT = "STRICT_PIT"
     CURRENT_UNIVERSE_PROXY = "CURRENT_UNIVERSE_PROXY"
 
-REQUIRED = {"index_code", "symbol", "effective_from", "effective_to", "source"}
+REQUIRED = {"index_code", "symbol", "effective_from", "effective_to", "source", "source_snapshot_id"}
 
 @dataclass(frozen=True)
 class UniverseResolution:
@@ -18,6 +18,7 @@ class UniverseResolution:
     mode: UniverseMode
     source: str
     warning: str | None = None
+    source_snapshot_ids: tuple[str, ...] = ()
 
 class UniverseStore:
     """Effective-dated universe snapshots.
@@ -52,7 +53,8 @@ class UniverseStore:
             symbols = tuple(sorted(rows.symbol.unique()))
             if symbols:
                 return UniverseResolution(as_of, symbols, UniverseMode.STRICT_PIT,
-                                          ";".join(sorted(rows.source.unique())))
+                                          ";".join(sorted(rows.source.unique())), None,
+                                          tuple(sorted(rows.source_snapshot_id.unique())))
         if allow_proxy and current_members:
             return UniverseResolution(
                 as_of, tuple(sorted({s.upper() for s in current_members})),
@@ -63,17 +65,27 @@ class UniverseStore:
 
     def append_snapshot(self, symbols: list[str], effective_from: date, *,
                         index_code: str = "VN100", source: str,
+                        source_snapshot_id: str,
                         effective_to: date | None = None) -> None:
+        """Append membership transcribed from one immutable official snapshot."""
+        if not source.strip() or not source_snapshot_id.strip():
+            raise ValueError("source and source_snapshot_id are required")
+        if effective_to is not None and effective_to < effective_from:
+            raise ValueError("effective_to cannot precede effective_from")
+        normalized = sorted({s.upper().strip() for s in symbols if s.strip()})
+        if not normalized:
+            raise ValueError("official membership snapshot cannot be empty")
         old = self._load()
         new = pd.DataFrame({
             "index_code": index_code,
-            "symbol": sorted({s.upper().strip() for s in symbols}),
+            "symbol": normalized,
             "effective_from": effective_from.isoformat(),
             "effective_to": effective_to.isoformat() if effective_to else "",
             "source": source,
+            "source_snapshot_id": source_snapshot_id,
         })
         out = pd.concat([old, new], ignore_index=True) if not old.empty else new
         out["effective_from"] = out["effective_from"].astype(str)
         out["effective_to"] = out["effective_to"].astype(str).replace("NaT", "")
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        out.drop_duplicates(["index_code", "symbol", "effective_from", "source"]).to_csv(self.path, index=False)
+        out.drop_duplicates(["index_code", "symbol", "effective_from", "source_snapshot_id"]).to_csv(self.path, index=False)

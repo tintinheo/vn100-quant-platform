@@ -8,6 +8,9 @@ from vnquant.market.rules import BrokerCostProfile
 from vnquant.backtest.engine import backtest_pullback_with_audit
 from vnquant.backtest.metrics import trade_metrics
 from vnquant.backtest.execution import ExecutionMode
+from vnquant.backtest.governance import govern_backtest_result
+from vnquant.data.universe import UniverseMode
+from vnquant.data.sector_membership import SectorMode
 
 def load_costs(path):
     x=yaml.safe_load(Path(path).read_text(encoding="utf-8")); return BrokerCostProfile(**{k:x[k] for k in ["commission_rate","commission_includes_exchange_fee","exchange_fee_rate","sell_tax_rate","slippage_bps"]})
@@ -24,7 +27,13 @@ def main():
     audit=pd.concat(audits,ignore_index=True) if audits else pd.DataFrame()
     audit_path=Path(a.output).with_name(Path(a.output).stem+"_execution_audit.csv")
     audit.to_csv(audit_path,index=False)
-    summary={"universe_mode":"CURRENT_UNIVERSE_PROXY","warning":"NOT_TRUE_HISTORICAL_VN100 unless effective-dated membership snapshots were supplied"}
+    governance=govern_backtest_result("Exploratory backtest",UniverseMode.CURRENT_UNIVERSE_PROXY,
+                                      SectorMode.CURRENT_ICB_PROXY)
+    summary={"result_label":governance.result_label,
+             "universe_mode":governance.universe_mode.value,
+             "sector_mode":governance.sector_mode.value,
+             "warnings":list(governance.warnings),
+             "capital_qualification_eligible":governance.capital_qualification_eligible}
     summary.update(trade_metrics(out))
     if not audit.empty:
         summary["signals_evaluated"]=int(len(audit)); summary["fill_rate"]=float((audit.status=="FILLED").mean())

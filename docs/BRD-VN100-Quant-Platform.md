@@ -37,6 +37,7 @@
 | **3.5.13** | **2026-09-14** | **Consolidated the retained v3.3/v3.5 BRD copies and duplicate ZIP bundles into this stable canonical file. Historical wording and withdrawn claims remain recoverable in Git; no business rule, provider status, or live-validation status changed.** |
 | **3.5.14** | **2026-09-14** | **Audited runtime constants/default arguments and moved configurable DQ, feature, regime, sector, recommendation, doctor and slippage values into the versioned `quant_parameters.v1.yaml` registry. Every unverified runtime value is literal `[D] [GUESS]` with a calibration/verification requirement; structural score/base and market-rule identities remain `[S]`. Full suite: 101 passed offline.** |
 | **3.5.15** | **2026-09-14** | **Clarified that every run is a synchronization check, not a three-provider fetch: capability state and explicit force determine I/O; only admitted providers are eligible, DNSE is preferred, Vietstock remains contract/admission-gated, and CafeF remains explicit sampled validation. Full suite: 102 passed offline; no admission/live-validation status change.** |
+| **3.5.16** | **2026-09-14** | **Implemented effective-dated official VN100 review ingestion and source-snapshot lineage, a versioned effective-dated sector taxonomy, and fail-closed backtest naming/capital-qualification rules. Offline tested only; no live-data/provider-admission change.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2018,3 +2019,12 @@ Before this module is described as `VALIDATED_REAL_DATA`, execute at least:
 `legacy/vnquant_realdata_v3_1_gptcode_impl.zip`, including its embedded `vnquant/data/ssi.py`, SSI-specific `vnquant/jobs/doctor.py` and `vnquant/jobs/bootstrap.py`, credential/setup files, and `ssi-sdk` reference, is retained solely as immutable historical evidence. `legacy/IMPLEMENTATION_REPORT_GPTCODE_STYLE.md` describes that same retired build and is explicitly disabled. Neither artifact states the current implementation, test status, or real-data validation status.
 
 The active package and deployment distributions must be discovered exclusively from `src/vnquant`. `legacy/` must be absent from wheel/source distributions, dependency declarations and pytest discovery, and direct checkout imports must fail closed. Negative tests rejecting SSI provider identifiers, credentials, modules, and dependencies are regression controls and must not be deleted merely because SSI is retired. No provider evidence, admission, or real-data-validation status changes under this archival classification.
+
+
+## 34. Effective-dated classification and backtest governance (2026-09-14)
+
+Official VN100 review evidence is ingested as immutable, content-addressed raw evidence before membership records are written. Every membership record carries `index_code`, `symbol`, `effective_from`, `effective_to`, `source`, and `source_snapshot_id`; only records covering the requested date qualify as `STRICT_PIT`.
+
+The sector taxonomy carries `symbol`, `sector_code`, `sector_name`, `taxonomy_version`, `effective_from`, `effective_to`, `source`, and `source_snapshot_id`. Historical joins propagate taxonomy and snapshot lineage. A missing PIT classification may remain an explicitly warned current-sector proxy for exploratory work only.
+
+Any output named a **historical VN100 backtest** requires `STRICT_PIT` universe mode. `CURRENT_UNIVERSE_PROXY` and current-sector proxy runs retain prominent leakage warnings and are categorically `NOT_ELIGIBLE_FOR_REAL_CAPITAL_STRATEGY_QUALIFICATION`. Capital-qualification eligibility requires both PIT universe and PIT sector modes; this is a governance eligibility gate, not evidence that a strategy is profitable or otherwise qualified.

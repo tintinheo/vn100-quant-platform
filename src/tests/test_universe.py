@@ -12,7 +12,8 @@ def test_strict_pit_never_silently_uses_current(tmp_path):
 
 def test_effective_dated_resolution(tmp_path):
     s=UniverseStore(tmp_path/"u.csv")
-    s.append_snapshot(["AAA","BBB"],date(2020,1,1),source="official")
+    s.append_snapshot(["AAA","BBB"],date(2020,1,1),source="official",source_snapshot_id="snap-1")
     r=s.resolve(date(2020,6,1))
     assert r.mode is UniverseMode.STRICT_PIT
     assert r.symbols == ("AAA","BBB")
+    assert r.source_snapshot_ids == ("snap-1",)

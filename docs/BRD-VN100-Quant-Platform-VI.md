@@ -37,6 +37,7 @@
 | **3.5.13** | **2026-09-14** | **Hợp nhất các bản BRD v3.3/v3.5 và ZIP bundle trùng lặp vào file canonical ổn định này. Nội dung lịch sử và các claim đã rút lại vẫn có thể truy xuất trong Git; không thay đổi business rule, trạng thái provider hoặc live validation.** |
 | **3.5.14** | **2026-09-14** | **Audit constant/default argument runtime và chuyển các giá trị DQ, feature, regime, sector, recommendation, doctor và slippage có thể cấu hình vào registry có version `quant_parameters.v1.yaml`. Mọi giá trị chưa xác minh mang literal `[D] [GUESS]` cùng yêu cầu calibration/verification; identity về score/base và market rule mang `[S]`. Full suite: 101 passed offline.** |
 | **3.5.15** | **2026-09-14** | **Làm rõ mỗi lần chạy là synchronization check, không phải fetch cả ba provider: capability state và force rõ ràng quyết định I/O; chỉ provider admitted mới hợp lệ, ưu tiên DNSE, Vietstock vẫn contract/admission-gated và CafeF chỉ dùng để sampled validation rõ ràng. Full suite: 102 passed offline; không thay đổi trạng thái admission/live validation.** |
+| **3.5.16** | **2026-09-14** | **Đã triển khai ingestion review VN100 chính thức theo effective date và lineage snapshot nguồn, taxonomy ngành theo phiên bản/effective date, cùng quy tắc fail-closed cho tên backtest và qualification vốn thật. Chỉ test offline; không thay đổi live-data/provider admission.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1410,3 +1411,12 @@ Không reverse-engineer Vietstock/CafeF browser endpoint thành production API. 
 `legacy/vnquant_realdata_v3_1_gptcode_impl.zip`, gồm `vnquant/data/ssi.py`, `vnquant/jobs/doctor.py`, `vnquant/jobs/bootstrap.py`, các file credential/setup và tham chiếu `ssi-sdk`, chỉ được giữ làm bằng chứng lịch sử bất biến. `legacy/IMPLEMENTATION_REPORT_GPTCODE_STYLE.md` mô tả cùng build đã retired và được ghi rõ là bị vô hiệu hóa. Không artifact nào thể hiện implementation, test status hoặc real-data validation hiện tại.
 
 Active package và deployment distribution chỉ được discover từ `src/vnquant`. `legacy/` phải vắng mặt khỏi wheel/source distribution, dependency declarations và pytest discovery; import trực tiếp từ checkout phải fail closed. Negative tests từ chối SSI provider ID, credentials, module và dependency là regression controls bắt buộc giữ lại. Phân loại archive này không thay đổi provider evidence, admission hoặc real-data-validation status.
+
+
+## 34. Phân loại effective-dated và governance backtest (2026-09-14)
+
+Bằng chứng review VN100 chính thức phải được lưu raw immutable/content-addressed trước khi ghi membership. Mỗi record giữ `index_code`, `symbol`, `effective_from`, `effective_to`, `source`, và `source_snapshot_id`; chỉ record cover đúng ngày mới là `STRICT_PIT`.
+
+Taxonomy ngành giữ `symbol`, `sector_code`, `sector_name`, `taxonomy_version`, `effective_from`, `effective_to`, `source`, và `source_snapshot_id`. Join lịch sử phải truyền lineage taxonomy/snapshot. Thiếu phân loại PIT chỉ được dùng current-sector proxy có cảnh báo cho exploratory work.
+
+Mọi output mang tên **historical VN100 backtest** bắt buộc dùng universe `STRICT_PIT`. Run `CURRENT_UNIVERSE_PROXY` hoặc current-sector proxy phải giữ cảnh báo leakage và luôn `NOT_ELIGIBLE_FOR_REAL_CAPITAL_STRATEGY_QUALIFICATION`. Muốn có eligibility để qualification cần cả universe và sector PIT; eligibility này không chứng minh strategy profitable hay đã qualified.
