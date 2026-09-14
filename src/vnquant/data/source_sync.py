@@ -16,10 +16,13 @@ import threading
 import time
 from typing import Callable, Mapping
 from uuid import uuid4
+from datetime import time as day_time
+from decimal import Decimal
 
 import pandas as pd
 
 from .base import DataMode
+from .models import CanonicalBar, RawSnapshot
 from .provider_registry import ProviderRegistry, default_provider_registry
 from .quality import validate_bars
 from .storage import Warehouse
@@ -263,10 +266,10 @@ class SourceSyncOrchestrator:
                 ranges[capability] = f"{start}/{expected}"
                 fetched = True
                 if capability == "current_index_members":
-                    members = provider.current_index_members("VN100")
-                    payload = json.dumps(members, sort_keys=True).encode()
-                    snapshots.append(str(Warehouse(self.data_dir).snapshot_payload(
-                        provider_id, f"{capability}-{start}-{expected}", payload).relative_to(self.data_dir)))
+                    raw = provider.fetch_current_index_members("VN100")
+                    snapshot = self._store_fetch(raw)
+                    snapshots.append(snapshot.snapshot_id)
+                    members = provider.normalize_index_members(raw)
                     master = pd.DataFrame({"symbol": members, "index_code": "VN100", "provider": provider_id})
                     Warehouse(self.data_dir).write_table(master, "security_master")
                     changes[capability] = len(master)
@@ -277,14 +280,23 @@ class SourceSyncOrchestrator:
                     members = self._members()
                     count, worst = 0, "PASS"
                     for symbol in members:
-                        frame = provider.daily_history(symbol, start, expected)
-                        payload = frame.to_json(orient="table", date_format="iso").encode()
-                        snapshots.append(str(Warehouse(self.data_dir).snapshot_payload(
-                            provider_id, f"{capability}-{symbol}-{start}-{expected}", payload).relative_to(self.data_dir)))
+                        raw = provider.fetch_daily_history(symbol, start, expected)
+                        snapshot = self._store_fetch(raw)
+                        snapshots.append(snapshot.snapshot_id)
+                        frame = provider.normalize_daily_history(raw)
                         issues = validate_bars(frame)
                         if any(issue.severity == "ERROR" for issue in issues):
                             raise RuntimeError(f"DQ failed for {symbol}")
                         worst = "WARN" if issues else worst
+                        canonical = [self._canonical(row, raw, snapshot) for _, row in frame.iterrows()]
+                        canonical_path = self.data_dir / "parquet" / "canonical_bars.parquet"
+                        if canonical_path.exists():
+                            existing = pd.read_parquet(canonical_path)
+                            keys = set(zip(existing.symbol, existing.timestamp, existing.provider))
+                            canonical = [bar for bar in canonical
+                                if (bar.symbol, bar.timestamp, bar.provider) not in keys]
+                        if canonical:
+                            Warehouse(self.data_dir).append_canonical_bars(canonical)
                         count += self._merge_bars(frame, symbol)
                     changes[capability], dq[capability] = count, worst
                 now = datetime.now(timezone.utc).isoformat()
@@ -313,6 +325,31 @@ class SourceSyncOrchestrator:
         finally:
             for provider in provider_objects.values():
                 provider.close()
+
+    def _store_fetch(self, fetched) -> RawSnapshot:
+        digest = hashlib.sha256(fetched.payload).hexdigest()
+        identity = json.dumps({"retrieved_at": fetched.retrieved_at.isoformat(),
+            "request_parameters": fetched.request_parameters, "adapter_version": fetched.adapter_version,
+            "source_reference": fetched.source_reference}, sort_keys=True).encode()
+        snapshot_id = f"{fetched.provider}-{hashlib.sha256(identity).hexdigest()[:24]}"
+        snapshot = RawSnapshot(snapshot_id, fetched.provider,
+            fetched.retrieved_at, fetched.payload, digest, fetched.source_reference,
+            dict(fetched.request_parameters), fetched.adapter_version, fetched.trust_tier,
+            fetched.raw_price_unit, fetched.price_semantics)
+        Warehouse(self.data_dir).store_raw_snapshot(snapshot)
+        return snapshot
+
+    @staticmethod
+    def _canonical(row, fetched, snapshot) -> CanonicalBar:
+        decimal = lambda value: None if pd.isna(value) else Decimal(str(value))
+        return CanonicalBar(
+            datetime.combine(row.trading_date, day_time.min, tzinfo=timezone.utc),
+            str(row.symbol), decimal(row.open), decimal(row.high), decimal(row.low),
+            decimal(row.close), int(row.volume), decimal(row.get("value")),
+            decimal(row.get("adj_close")), fetched.provider, fetched.retrieved_at, (),
+            snapshot.snapshot_id, fetched.trust_tier, fetched.raw_price_unit,
+            fetched.price_semantics, json.dumps(fetched.request_parameters, sort_keys=True),
+            fetched.adapter_version, fetched.source_reference, snapshot.payload_sha256)
 
     def _members(self) -> list[str]:
         table = self.data_dir / "parquet" / "security_master.parquet"

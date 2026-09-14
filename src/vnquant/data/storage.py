@@ -43,6 +43,15 @@ class Warehouse:
             matches=list((self.raw/bar.provider).glob(f"{bar.raw_snapshot_id}.*.bin"))
             if not matches:
                 raise ValueError(f"unknown raw_snapshot_id: {bar.raw_snapshot_id}")
+            metadata=json.loads(matches[0].with_suffix(matches[0].suffix+".json").read_text("utf-8"))
+            expected={"payload_sha256":bar.payload_sha256,"adapter_version":bar.adapter_version,
+                      "trust_tier":bar.trust_tier,"raw_price_unit":bar.raw_price_unit,
+                      "price_semantics":bar.price_semantics,"source_reference":bar.source_reference}
+            if any(metadata.get(key) != value for key,value in expected.items()
+                   if value != "unknown"):
+                raise ValueError(f"canonical lineage does not match raw snapshot: {bar.raw_snapshot_id}")
+            if bar.request_parameters != "{}" and metadata.get("request_parameters") != json.loads(bar.request_parameters):
+                raise ValueError(f"canonical request metadata does not match raw snapshot: {bar.raw_snapshot_id}")
         table=self.parquet/"canonical_bars.parquet"
         incoming=pd.DataFrame([_record_dict(bar) for bar in bars])
         if table.exists():
@@ -82,7 +91,12 @@ class Warehouse:
         metadata={"snapshot_id":snapshot.snapshot_id,"provider":snapshot.provider,
                   "ingested_at":snapshot.ingested_at.isoformat(),
                   "payload_sha256":snapshot.payload_sha256,
-                  "source_reference":snapshot.source_reference}
+                  "source_reference":snapshot.source_reference,
+                  "request_parameters":snapshot.request_parameters,
+                  "adapter_version":snapshot.adapter_version,
+                  "trust_tier":snapshot.trust_tier,
+                  "raw_price_unit":snapshot.raw_price_unit,
+                  "price_semantics":snapshot.price_semantics}
         out.with_suffix(out.suffix+".json").write_text(
             json.dumps(metadata,ensure_ascii=False,indent=2),encoding="utf-8")
         return out

@@ -29,6 +29,7 @@
 | **3.5.5** | **2026-09-14** | **Implemented structured admission evidence, evidence-gated lifecycle transitions, suspension/revalidation, and regression coverage for incomplete or ineligible sources.** |
 | **3.5.6** | **2026-09-14** | **Required the persisted synchronization result at both runtime entry points, added explicit cache-acceptance/degraded fields, and made blocked pipeline publication invalidate stale candidate/sector artifacts. Offline tested only.** |
 | **3.5.7** | **2026-09-14** | **Implemented the complete application sync-service mechanics: capability/provider resolution, independent persisted watermarks and policies, expected-session calculation, deterministic freshness keys, cross-rerun locking, incremental/recheck fetch, immutable raw snapshots, idempotent canonical merges, force refresh, and persisted per-capability results. Offline tested only.** |
+| **3.5.8** | **2026-09-14** | **Implemented raw-first provider fetch results, evidence-before-normalization/canonical-write ordering, full canonical lineage fields, and exact-byte hashing/snapshotting for authorized price and universe files. Offline tested only.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
