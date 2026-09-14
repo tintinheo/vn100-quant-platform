@@ -11,9 +11,9 @@ st.set_page_config(page_title="VNQuant v3.3",layout="wide")
 st.title("VNQuant v3.3 — SSI-Free Viewer")
 st.caption("Decision support only. Startup performs a governed source sync check; it never places orders.")
 sync=run_startup_sync()
-st.caption(f"Source: {sync.provider_id or 'none'} | mode: {sync.mode} | age: {sync.data_age_days if sync.data_age_days is not None else 'unknown'} days | last sync: {sync.last_successful_sync or 'never'} | DQ: {sync.dq_status}")
+st.caption(f"Source: {sync.provider_id or 'none'} | mode: {sync.mode} | degraded: {'yes' if sync.degraded_mode else 'no'} | cache accepted: {'yes' if sync.cache_accepted else 'no'} | age: {sync.data_age_days if sync.data_age_days is not None else 'unknown'} days | last sync: {sync.last_successful_sync or 'never'} | DQ: {sync.dq_status}")
 if not sync.actionable:
-    st.error(sync.failure_reason or sync.mode)
+    st.error(sync.status)
 pub=Path("publish")
 market_file=pub/"market.json"
 if sync.actionable and market_file.exists():
@@ -36,12 +36,12 @@ with tabs[0]:
     else: st.caption("No candidate artifact.")
 with tabs[1]:
     p=pub/"sector_scores.csv"
-    if p.exists():
+    if sync.actionable and p.exists():
         df=pd.read_csv(p); st.dataframe(df,use_container_width=True,hide_index=True)
     else: st.caption("No sector-score artifact.")
 with tabs[2]:
     p=pub/"backtest_current_universe_proxy.csv"
-    if p.exists():
+    if sync.actionable and p.exists():
         df=pd.read_csv(p); st.metric("Filled trades",len(df)); st.dataframe(df.tail(200),use_container_width=True,hide_index=True)
         audit=pub/"backtest_current_universe_proxy_execution_audit.csv"
         if audit.exists():

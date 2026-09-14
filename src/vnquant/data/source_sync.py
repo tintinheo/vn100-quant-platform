@@ -25,6 +25,15 @@ class SyncMode(str, Enum):
     FAILED = "FAILED"
 
 
+class SyncStatus(str, Enum):
+    """Outcome consumed by every actionable application entry point."""
+
+    READY = "READY"
+    CACHE_STALE = "CACHE_STALE"
+    SYNC_FAILED = "SYNC_FAILED"
+    NO_ADMITTED_PROVIDER = "NO_ADMITTED_PROVIDER"
+
+
 @dataclass(frozen=True)
 class SyncReport:
     run_id: str
@@ -43,11 +52,19 @@ class SyncReport:
     failure_reason: str | None
     mode: str
     actionable: bool
+    status: str = SyncStatus.SYNC_FAILED.value
+    cache_accepted: bool = False
+    degraded_mode: bool = False
 
     @classmethod
     def from_dict(cls, value: dict) -> "SyncReport":
         value = dict(value)
         value["required_capabilities"] = tuple(value["required_capabilities"])
+        # Results written before the synchronization-result contract was added
+        # may prove cache lineage, but are never silently made actionable.
+        value.setdefault("status", value.get("failure_reason") or "SYNC_FAILED")
+        value.setdefault("cache_accepted", False)
+        value.setdefault("degraded_mode", value.get("mode") in {"STALE", "DEGRADED_CACHED_DATA"})
         return cls(**value)
 
 
@@ -130,12 +147,14 @@ class SourceSyncOrchestrator:
                     dq_status=previous.dq_status, last_accepted_market_date=previous.last_accepted_market_date,
                     last_successful_sync=previous.last_successful_sync, failure_reason="NO_ADMITTED_PROVIDER",
                     mode=SyncMode.STALE.value, actionable=False,
+                    status=SyncStatus.CACHE_STALE.value, cache_accepted=True, degraded_mode=True,
                 ))
             return self._persist(self._report(
                 started, previous, provider_id=None, fresh_before=False,
                 remote_fetch_performed=False, requested_range=None, canonical_rows_written=0,
                 dq_status="FAIL", last_accepted_market_date=None,
                 failure_reason="NO_ADMITTED_PROVIDER", mode=SyncMode.FAILED.value, actionable=False,
+                status=SyncStatus.NO_ADMITTED_PROVIDER.value, cache_accepted=False, degraded_mode=False,
             ))
 
         provider_id = admitted[0]
@@ -166,6 +185,7 @@ class SourceSyncOrchestrator:
                 canonical_rows_written=rows, dq_status=worst,
                 last_accepted_market_date=expected.isoformat(), last_successful_sync=now,
                 failure_reason=None, mode=SyncMode.LIVE.value, actionable=worst != "FAIL",
+                status=SyncStatus.READY.value, cache_accepted=True, degraded_mode=False,
             ))
         except Exception as error:
             if accepted:
@@ -177,13 +197,15 @@ class SourceSyncOrchestrator:
                     last_successful_sync=previous.last_successful_sync,
                     failure_reason=f"{type(error).__name__}: {error}",
                     mode=SyncMode.DEGRADED_CACHED_DATA.value, actionable=False,
+                    status=SyncStatus.CACHE_STALE.value, cache_accepted=True, degraded_mode=True,
                 ))
             return self._persist(self._report(
                 started, previous, provider_id=provider_id, fresh_before=False,
                 remote_fetch_performed=True, requested_range=f"{start_date}/{expected}",
                 canonical_rows_written=0, dq_status="FAIL", last_accepted_market_date=None,
                 failure_reason=f"{type(error).__name__}: {error}", mode=SyncMode.FAILED.value,
-                actionable=False,
+                actionable=False, status=SyncStatus.SYNC_FAILED.value,
+                cache_accepted=False, degraded_mode=False,
             ))
         finally:
             provider.close()

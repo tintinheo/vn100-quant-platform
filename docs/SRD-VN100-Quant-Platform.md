@@ -27,6 +27,7 @@
 | **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible offline result and made `src/vnquant/` the documented implementation path. No live-validation/admission change.** |
 | **3.5.4** | **2026-09-14** | **Completed the provider contract guardrails: DNSE is explicitly read-only with all unverified live assumptions tagged `[GUESS]`; Vietstock validates endpoint semantics and retention rights before I/O; CafeF is ineligible for admission.** |
 | **3.5.5** | **2026-09-14** | **Implemented structured admission evidence, evidence-gated lifecycle transitions, suspension/revalidation, and regression coverage for incomplete or ineligible sources.** |
+| **3.5.6** | **2026-09-14** | **Required the persisted synchronization result at both runtime entry points, added explicit cache-acceptance/degraded fields, and made blocked pipeline publication invalidate stale candidate/sector artifacts. Offline tested only.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2015,6 +2016,8 @@ startup
 ```
 
 The UI must display `data_as_of`, `last_sync_at`, `provider_id`, `sync_mode`, and DQ status.
+
+Both `src/app.py` startup and direct `src/vnquant/jobs/pipeline.py` invocation must consume the governed synchronization result before loading bars or running features. When neither an admitted provider nor a policy-accepted cache exists, the persisted and published status is `NO_ADMITTED_PROVIDER`; feature, signal, candidate, and recommendation generation is blocked. A permitted cache result exposes its provider, age, last successful synchronization, DQ status, cache-acceptance decision, and degraded mode. Blocked publication removes older candidate/sector artifacts so they cannot be mistaken for current output. No CSV, synthetic, CafeF, or undocumented source is selected implicitly.
 
 ## 26.7. Manual importer role
 

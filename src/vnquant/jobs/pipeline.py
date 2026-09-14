@@ -13,6 +13,21 @@ from vnquant.data.sector_membership import apply_sector_mapping
 from vnquant.data.source_sync import SourceSyncOrchestrator
 
 
+def _publish_blocked_result(sync, publish_dir: str) -> dict:
+    """Publish the gate outcome and remove analytics from an older run."""
+    result={"status":sync.status,"sync_mode":sync.mode,
+            "provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
+            "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
+            "degraded_mode":sync.degraded_mode,"cache_accepted":sync.cache_accepted,
+            "candidate_count":0,"actionable":False}
+    out=Path(publish_dir); out.mkdir(parents=True,exist_ok=True)
+    for name in ("candidates.csv", "sector_scores.csv"):
+        (out/name).unlink(missing_ok=True)
+    (out/"market.json").write_text(
+        json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
+    return result
+
+
 def _load_panel(wh: Warehouse, sector_pit_path: str | None = None):
     frames=[]
     sec=None
@@ -31,10 +46,7 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
         sync_orchestrator: SourceSyncOrchestrator | None = None) -> dict:
     sync=(sync_orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"})
     if not sync.actionable:
-        return {"status":sync.failure_reason or sync.mode,"sync_mode":sync.mode,
-                "provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
-                "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
-                "candidate_count":0,"actionable":False}
+        return _publish_blocked_result(sync,publish_dir)
     wh=Warehouse(data_dir); panel, sector_mode, sector_warning=_load_panel(wh,sector_pit_path)
     panel=add_cross_sectional_rs(panel,horizons=(20,126))
     breadth=compute_breadth(panel); ew=build_equal_weight_index(panel)
@@ -67,7 +79,9 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
             "sector_mode":sector_mode,"sector_warning":sector_warning,
             "cap_index_mode":"EQUAL_WEIGHT_PROXY_UNTIL_OFFICIAL_INDEX_SERIES_INGESTED",
             "sync_mode":sync.mode,"provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
-            "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,"actionable":True}
+            "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
+            "degraded_mode":sync.degraded_mode,"cache_accepted":sync.cache_accepted,
+            "status":sync.status,"actionable":True}
     (out/"market.json").write_text(json.dumps(market,ensure_ascii=False,indent=2),encoding="utf-8")
     return market
 

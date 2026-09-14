@@ -11,7 +11,7 @@ from vnquant.data.provider_registry import (
     ProviderState,
     ValidationResult,
 )
-from vnquant.data.source_sync import SourceSyncOrchestrator, SyncMode
+from vnquant.data.source_sync import SourceSyncOrchestrator, SyncMode, SyncStatus
 from vnquant.jobs.pipeline import run as run_pipeline
 
 
@@ -65,6 +65,10 @@ def registry_for(provider):
 def test_app_run_invokes_source_sync_check():
     source = open("app.py", encoding="utf-8").read()
     assert "sync=run_startup_sync()" in source
+    assert "st.error(sync.status)" in source
+    for field in ("provider_id", "data_age_days", "last_successful_sync",
+                  "dq_status", "degraded_mode", "cache_accepted"):
+        assert f"sync.{field}" in source
 
 
 def test_fresh_cache_avoids_duplicate_remote_fetch(tmp_path):
@@ -102,6 +106,7 @@ def test_stale_data_triggers_incremental_fetch(tmp_path):
 def test_no_admitted_provider_fails_closed(tmp_path):
     report = SourceSyncOrchestrator(tmp_path, registry=ProviderRegistry()).sync()
     assert report.failure_reason == "NO_ADMITTED_PROVIDER"
+    assert report.status == SyncStatus.NO_ADMITTED_PROVIDER.value
     assert not report.actionable
 
 
@@ -110,6 +115,21 @@ def test_recommendation_generation_blocked_without_accepted_sync(tmp_path):
     assert result["status"] == "NO_ADMITTED_PROVIDER"
     assert result["candidate_count"] == 0
     assert not (tmp_path / "publish" / "candidates.csv").exists()
+    published = pd.read_json(tmp_path / "publish" / "market.json", typ="series")
+    assert published["status"] == "NO_ADMITTED_PROVIDER"
+
+
+def test_direct_pipeline_removes_stale_analytics_artifacts(tmp_path):
+    publish = tmp_path / "publish"
+    publish.mkdir()
+    for name in ("candidates.csv", "sector_scores.csv"):
+        (publish / name).write_text("stale,data\n", encoding="utf-8")
+
+    result = run_pipeline(str(tmp_path), str(publish))
+
+    assert result["status"] == "NO_ADMITTED_PROVIDER"
+    assert not (publish / "candidates.csv").exists()
+    assert not (publish / "sector_scores.csv").exists()
 
 
 def test_provider_failure_never_falls_back_to_undocumented_source(tmp_path):
@@ -138,6 +158,20 @@ def test_accepted_cache_exposes_stale_lineage_without_provider(tmp_path):
     assert report.last_successful_sync
     assert report.dq_status == "PASS"
     assert report.failure_reason == "NO_ADMITTED_PROVIDER"
+    assert report.cache_accepted
+    assert report.degraded_mode
+
+
+def test_unusable_cache_does_not_bypass_provider_gate(tmp_path):
+    bars = tmp_path / "parquet" / "bars"
+    bars.mkdir(parents=True)
+    (bars / "UNTRUSTED.parquet").write_bytes(b"not governed data")
+
+    report = SourceSyncOrchestrator(tmp_path, registry=ProviderRegistry()).sync()
+
+    assert report.status == "NO_ADMITTED_PROVIDER"
+    assert not report.cache_accepted
+    assert report.provider_id is None
 
 
 def test_manual_file_is_not_required_for_normal_startup(tmp_path):
