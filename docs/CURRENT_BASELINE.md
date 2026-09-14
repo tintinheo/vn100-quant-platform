@@ -54,3 +54,15 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (sync orchestration completion)** | **2026-09-14** | **Added capability freshness policies, provider/capability watermarks, expected-session resolution, deterministic freshness keys, cross-rerun locking, incremental raw snapshots/canonical merges, force refresh, and persisted per-capability results. Offline tested only; no live-validation or provider-admission change.** |
 | **3.5 (raw-evidence contract)** | **2026-09-14** | **Provider/file fetches now retain raw payload and request context before normalization, and canonical writes require persisted raw evidence. Offline tested only; no live-validation or provider-admission change.** |
 | **3.5 (canonical DQ service)** | **2026-09-14** | **Unified DQ checks and revision/sync-report persistence and enforced confidence/actionability gates. Offline tested only; no live-validation or provider-admission change.** |
+| **3.5 (historical isolation)** | **2026-09-14** | **Quarantined the v3.1 SSI archive/report from imports, builds, dependencies and test discovery; retained negative retirement tests. No provider/admission/live-validation change.** |
+
+## Historical-artifact isolation (2026-09-14)
+
+The v3.1 archive, its embedded SSI adapter and SSI-specific doctor/bootstrap,
+and its implementation report are historical/disabled evidence under
+`legacy/`; they are not active implementation or validation evidence. Active
+package discovery is restricted to `src/vnquant`, build artifacts and
+dependencies exclude legacy/SSI inputs, pytest discovery is restricted to
+`src/tests`, and checkout imports of `legacy` fail closed. Negative SSI
+retirement tests remain required. Provider admission and real-data status are
+unchanged.

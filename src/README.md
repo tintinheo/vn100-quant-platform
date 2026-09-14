@@ -50,3 +50,10 @@ streamlit run app.py
 Historical current-membership runs remain explicitly labelled
 `CURRENT_UNIVERSE_PROXY`; they are not true point-in-time VN100 backtests.
 Existing measured strategy results are synthetic, not real-data validation.
+
+## Historical v3.1 material
+
+The retired v3.1 SSI implementation and report are documented under
+`../legacy/README.md`. They are intentionally outside this active source tree
+and cannot be imported or packaged. Keep the negative SSI retirement tests;
+they enforce this product-policy boundary.

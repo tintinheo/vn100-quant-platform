@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vn100-quant-platform"
+version = "3.5.0"
+description = "SSI-free VN100 quantitative research runtime"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "streamlit>=1.49,<2",
+  "pandas>=2.2,<3",
+  "numpy>=2.0,<3",
+  "plotly>=5.24,<7",
+  "pyyaml>=6,<7",
+]
+
+[project.optional-dependencies]
+local = ["duckdb>=1.2,<2", "pyarrow>=18,<23"]
+test = ["pytest>=8,<10"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["vnquant", "vnquant.*"]
+exclude = ["legacy", "legacy.*", "tests", "tests.*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["src/tests"]
+norecursedirs = ["legacy", "build", "dist", ".git", ".venv"]
+addopts = ["--import-mode=importlib"]

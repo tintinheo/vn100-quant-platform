@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from datetime import date, datetime, timezone
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -80,7 +81,7 @@ def registry_for(provider):
 
 
 def test_app_run_invokes_source_sync_check():
-    source = open("app.py", encoding="utf-8").read()
+    source = (Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8")
     assert "sync=run_startup_sync(force=force_refresh)" in source
     assert 'st.sidebar.button("Refresh now"' in source
     assert "st.error(sync.status)" in source
