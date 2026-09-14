@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
@@ -64,7 +65,8 @@ def registry_for(provider):
 
 def test_app_run_invokes_source_sync_check():
     source = open("app.py", encoding="utf-8").read()
-    assert "sync=run_startup_sync()" in source
+    assert "sync=run_startup_sync(force=force_refresh)" in source
+    assert 'st.sidebar.button("Refresh now"' in source
     assert "st.error(sync.status)" in source
     for field in ("provider_id", "data_age_days", "last_successful_sync",
                   "dq_status", "degraded_mode", "cache_accepted"):
@@ -94,12 +96,12 @@ def test_streamlit_rerun_does_not_refetch_same_state(tmp_path):
 
 def test_stale_data_triggers_incremental_fetch(tmp_path):
     provider = CountingProvider()
-    day = [date(2026, 9, 12)]
+    day = [date(2026, 9, 14)]
     sync = SourceSyncOrchestrator(tmp_path, registry=registry_for(provider), today=lambda: day[0])
     sync.sync()
-    day[0] = date(2026, 9, 13)
+    day[0] = date(2026, 9, 15)
     report = sync.sync()
-    assert report.requested_range == "2026-09-12/2026-09-13"
+    assert report.requested_range == "2026-09-14/2026-09-15"
     assert provider.calls == 2
 
 
@@ -135,10 +137,10 @@ def test_direct_pipeline_removes_stale_analytics_artifacts(tmp_path):
 def test_provider_failure_never_falls_back_to_undocumented_source(tmp_path):
     successful = CountingProvider()
     SourceSyncOrchestrator(tmp_path, registry=registry_for(successful),
-                           today=lambda: date(2026, 9, 12)).sync()
+                           today=lambda: date(2026, 9, 14)).sync()
     failing = CountingProvider(fail=True)
     report = SourceSyncOrchestrator(tmp_path, registry=registry_for(failing),
-                                    today=lambda: date(2026, 9, 13)).sync()
+                                    today=lambda: date(2026, 9, 15)).sync()
     assert report.mode == SyncMode.DEGRADED_CACHED_DATA.value
     assert report.provider_id == "documented_feed"
     assert report.data_age_days == 1
@@ -149,12 +151,12 @@ def test_provider_failure_never_falls_back_to_undocumented_source(tmp_path):
 def test_accepted_cache_exposes_stale_lineage_without_provider(tmp_path):
     provider = CountingProvider()
     SourceSyncOrchestrator(tmp_path, registry=registry_for(provider),
-                           today=lambda: date(2026, 9, 12)).sync()
+                           today=lambda: date(2026, 9, 11)).sync()
     report = SourceSyncOrchestrator(tmp_path, registry=ProviderRegistry(),
                                     today=lambda: date(2026, 9, 14)).sync()
     assert report.mode == SyncMode.STALE.value
     assert report.provider_id == provider.provider_id
-    assert report.data_age_days == 2
+    assert report.data_age_days == 3
     assert report.last_successful_sync
     assert report.dq_status == "PASS"
     assert report.failure_reason == "NO_ADMITTED_PROVIDER"
@@ -178,3 +180,42 @@ def test_manual_file_is_not_required_for_normal_startup(tmp_path):
     report = SourceSyncOrchestrator(tmp_path, registry=ProviderRegistry()).sync()
     assert report.mode == SyncMode.FAILED.value
     assert not list(tmp_path.glob("*.csv"))
+
+
+def test_force_refresh_rechecks_provider_and_remains_idempotent(tmp_path):
+    provider = CountingProvider()
+    sync = SourceSyncOrchestrator(tmp_path, registry=registry_for(provider),
+                                  today=lambda: date(2026, 9, 14))
+    first = sync.sync()
+    forced = sync.sync(force=True)
+    assert provider.calls == 2
+    assert forced.remote_fetch_performed
+    assert forced.canonical_changes["daily_ohlcv"] == 0
+    assert forced.raw_snapshot_ids
+    assert forced.run_id != first.run_id
+
+
+def test_concurrent_reruns_share_cross_instance_lock(tmp_path):
+    provider = CountingProvider()
+    registry = registry_for(provider)
+
+    def run_once():
+        return SourceSyncOrchestrator(tmp_path, registry=registry,
+            today=lambda: date(2026, 9, 14)).sync()
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        reports = list(pool.map(lambda _: run_once(), range(4)))
+    assert provider.calls == 1
+    assert len({report.run_id for report in reports}) == 1
+
+
+def test_expected_session_skips_weekend_and_watermarks_each_capability(tmp_path):
+    provider = CountingProvider()
+    sync = SourceSyncOrchestrator(tmp_path, registry=registry_for(provider),
+                                  today=lambda: date(2026, 9, 13))
+    report = sync.sync()
+    watermarks = sync.load_watermarks()
+    assert report.last_accepted_market_date == "2026-09-11"
+    assert set(report.providers) == {"daily_ohlcv", "current_index_members"}
+    assert {watermark.capability for watermark in watermarks.values()} == set(report.providers)
+    assert report.dq_result == {"current_index_members": "PASS", "daily_ohlcv": "PASS"}

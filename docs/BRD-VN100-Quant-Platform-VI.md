@@ -28,6 +28,7 @@
 | **3.5.4** | **2026-09-14** | **Siết chặt provider boundary: Vietstock bắt buộc khai báo endpoint semantics và retention rights cùng các trường authorized contract khác, CafeF không thể được admitted, và mọi live assumption của DNSE vẫn là `[GUESS]`. Trạng thái provider admission không đổi.** |
 | **3.5.5** | **2026-09-14** | **Thay cờ documented-access bằng hồ sơ admission evidence có cấu trúc và lifecycle bắt buộc. Không thay đổi trạng thái admission/live validation.** |
 | **3.5.6** | **2026-09-14** | **Bắt buộc app và pipeline dùng synchronization result; publish/hiển thị `NO_ADMITTED_PROVIDER` khi không có provider admitted và cache được policy chấp nhận; công khai cache/degraded lineage và loại bỏ actionable artifact cũ. Chỉ offline-tested.** |
+| **3.5.7** | **2026-09-14** | **Hoàn tất freshness theo capability, watermark theo provider/capability, deterministic rerun key, synchronization lock, incremental/recheck fetch, raw snapshot lineage và force refresh rõ ràng. Calendar chỉ loại cuối tuần và recheck defaults vẫn là `[GUESS]`; provider admission không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 

@@ -4,13 +4,14 @@ import pandas as pd
 import streamlit as st
 from vnquant.data.source_sync import SourceSyncOrchestrator
 
-def run_startup_sync(data_dir="data", orchestrator=None):
-    return (orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"})
+def run_startup_sync(data_dir="data", orchestrator=None, *, force=False):
+    return (orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"}, force=force)
 
 st.set_page_config(page_title="VNQuant v3.3",layout="wide")
 st.title("VNQuant v3.3 — SSI-Free Viewer")
 st.caption("Decision support only. Startup performs a governed source sync check; it never places orders.")
-sync=run_startup_sync()
+force_refresh=st.sidebar.button("Refresh now", help="Force a governed provider recheck")
+sync=run_startup_sync(force=force_refresh)
 st.caption(f"Source: {sync.provider_id or 'none'} | mode: {sync.mode} | degraded: {'yes' if sync.degraded_mode else 'no'} | cache accepted: {'yes' if sync.cache_accepted else 'no'} | age: {sync.data_age_days if sync.data_age_days is not None else 'unknown'} days | last sync: {sync.last_successful_sync or 'never'} | DQ: {sync.dq_status}")
 if not sync.actionable:
     st.error(sync.status)

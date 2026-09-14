@@ -28,6 +28,7 @@
 | **3.5.4** | **2026-09-14** | **Completed the provider contract guardrails: DNSE is explicitly read-only with all unverified live assumptions tagged `[GUESS]`; Vietstock validates endpoint semantics and retention rights before I/O; CafeF is ineligible for admission.** |
 | **3.5.5** | **2026-09-14** | **Implemented structured admission evidence, evidence-gated lifecycle transitions, suspension/revalidation, and regression coverage for incomplete or ineligible sources.** |
 | **3.5.6** | **2026-09-14** | **Required the persisted synchronization result at both runtime entry points, added explicit cache-acceptance/degraded fields, and made blocked pipeline publication invalidate stale candidate/sector artifacts. Offline tested only.** |
+| **3.5.7** | **2026-09-14** | **Implemented the complete application sync-service mechanics: capability/provider resolution, independent persisted watermarks and policies, expected-session calculation, deterministic freshness keys, cross-rerun locking, incremental/recheck fetch, immutable raw snapshots, idempotent canonical merges, force refresh, and persisted per-capability results. Offline tested only.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2040,7 +2041,7 @@ test_raw_payload_persisted_before_canonical_commit
 
 ## 26.9. Implementation status
 
-`PARTIALLY IMPLEMENTED` as of 2026-09-14. The referenced `vn100_multisource_feed_v1` package was never committed and provides no reproducible evidence. Provider, cache, DQ, and source-sync capabilities are maintained under `src/vnquant/` and tested from `src/tests/`; the application still does not satisfy the complete v3.5 runtime contract, and live Source Admission remains pending.
+`IMPLEMENTED / OFFLINE_TESTED` as of 2026-09-14 for the application sync-service contract. Provider, cache, DQ, and source-sync capabilities are maintained under `src/vnquant/` and tested from `src/tests/`. The default weekday-only expected-session calendar and revision recheck intervals are configurable `[GUESS]` values pending authoritative calendar and admitted-provider revision evidence. Live Source Admission and real-data validation remain pending, so the default runtime still fails closed.
 
 > ## DISCLAIMER
 >
