@@ -27,6 +27,7 @@
 | **3.5.3** | **2026-09-14** | **Repository audit xác nhận `vn100_multisource_feed_v1` chưa từng được commit; bỏ claim 10/10 không thể tái lập và ghi nhận `src/vnquant/` là implementation path được duy trì. Không thay đổi trạng thái live validation/admission.** |
 | **3.5.4** | **2026-09-14** | **Siết chặt provider boundary: Vietstock bắt buộc khai báo endpoint semantics và retention rights cùng các trường authorized contract khác, CafeF không thể được admitted, và mọi live assumption của DNSE vẫn là `[GUESS]`. Trạng thái provider admission không đổi.** |
 | **3.5.5** | **2026-09-14** | **Thay cờ documented-access bằng hồ sơ admission evidence có cấu trúc và lifecycle bắt buộc. Không thay đổi trạng thái admission/live validation.** |
+| **3.5.6** | **2026-09-14** | **Bắt buộc app và pipeline dùng synchronization result; publish/hiển thị `NO_ADMITTED_PROVIDER` khi không có provider admitted và cache được policy chấp nhận; công khai cache/degraded lineage và loại bỏ actionable artifact cũ. Chỉ offline-tested.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1285,6 +1286,8 @@ Nếu provider ADMITTED lỗi tạm thời nhưng local warehouse còn snapshot 
 - không âm thầm thay bằng synthetic hay nguồn undocumented.
 
 Nếu không có cache đủ điều kiện, real-data analysis phải fail closed.
+
+`src/app.py` và direct pipeline đều phải kiểm tra synchronization result trước khi tạo feature, signal, candidate hay recommendation. Nếu không có provider admitted và cũng không có cache được policy chấp nhận, phải persist, publish và hiển thị `NO_ADMITTED_PROVIDER`; không được dùng ngầm CSV, synthetic, CafeF hoặc nguồn undocumented. Nếu policy cho phép cache, kết quả phải hiển thị provider, tuổi dữ liệu, lần đồng bộ thành công gần nhất, DQ status, cache-acceptance và degraded mode; artifact actionable cũ phải bị ẩn hoặc xóa.
 
 ## 28.7. Acceptance criteria
 

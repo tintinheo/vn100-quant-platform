@@ -27,6 +27,7 @@
 | **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible 10/10 claim and recorded `src/vnquant/` as the maintained implementation path. Live-validation/admission status is unchanged.** |
 | **3.5.4** | **2026-09-14** | **Hardened provider boundaries: Vietstock now requires endpoint semantics and retention rights in addition to the other authorized contract fields, CafeF cannot be admitted, and all DNSE live assumptions remain `[GUESS]`. Provider admission status is unchanged.** |
 | **3.5.5** | **2026-09-14** | **Replaced the registry's documented-access flag with structured admission evidence and an enforced lifecycle. No admission/live-validation status changed.** |
+| **3.5.6** | **2026-09-14** | **Made the synchronization outcome a mandatory app/pipeline gate, published `NO_ADMITTED_PROVIDER` when neither an admitted provider nor policy-accepted cache exists, exposed cache/degraded lineage, and suppressed stale actionable artifacts. Offline tested only.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1834,6 +1835,8 @@ If an ADMITTED provider is temporarily unavailable but the local canonical wareh
 - no synthetic or undocumented source silently replaces the failed provider.
 
 If no acceptable cached state exists, real-data analysis fails closed.
+
+Application startup and direct pipeline execution must consume the governed synchronization result before feature, signal, candidate, or recommendation generation. If neither an admitted provider nor a policy-accepted cache exists, they persist, publish, and display `NO_ADMITTED_PROVIDER`; no CSV, synthetic, CafeF, or undocumented source may be substituted implicitly. When policy permits cache use, the result exposes provider, data age, last successful synchronization, DQ status, cache acceptance, and degraded mode. Older actionable artifacts must be hidden or removed when the gate blocks a run.
 
 ## 28.7. Acceptance criteria
 
