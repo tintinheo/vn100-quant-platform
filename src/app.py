@@ -2,13 +2,21 @@ from pathlib import Path
 import json
 import pandas as pd
 import streamlit as st
+from vnquant.data.source_sync import SourceSyncOrchestrator
+
+def run_startup_sync(data_dir="data", orchestrator=None):
+    return (orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"})
 
 st.set_page_config(page_title="VNQuant v3.3",layout="wide")
 st.title("VNQuant v3.3 — SSI-Free Viewer")
-st.caption("Decision support only. Hosted mode reads sanitized artifacts; it never fetches provider data or places orders.")
+st.caption("Decision support only. Startup performs a governed source sync check; it never places orders.")
+sync=run_startup_sync()
+st.caption(f"Source: {sync.provider_id or 'none'} | mode: {sync.mode} | age: {sync.data_age_days if sync.data_age_days is not None else 'unknown'} days | last sync: {sync.last_successful_sync or 'never'} | DQ: {sync.dq_status}")
+if not sync.actionable:
+    st.error(sync.failure_reason or sync.mode)
 pub=Path("publish")
 market_file=pub/"market.json"
-if market_file.exists():
+if sync.actionable and market_file.exists():
     market=json.loads(market_file.read_text(encoding="utf-8"))
     c1,c2,c3=st.columns(3)
     c1.metric("Market regime",market.get("regime","UNKNOWN"))
@@ -23,7 +31,7 @@ else:
 tabs=st.tabs(["Candidates","Sector Rotation","Backtest","Data/Model Notes"])
 with tabs[0]:
     p=pub/"candidates.csv"
-    if p.exists():
+    if sync.actionable and p.exists():
         df=pd.read_csv(p); st.dataframe(df,use_container_width=True,hide_index=True)
     else: st.caption("No candidate artifact.")
 with tabs[1]:

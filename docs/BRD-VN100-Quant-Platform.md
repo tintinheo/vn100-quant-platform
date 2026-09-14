@@ -23,6 +23,7 @@
 | 3.4 | 2026-09-13 | Auto-refresh-on-run requirement: sync-if-stale, cache, fail-safe; CSV/XLSX demoted to fallback/debug. |
 | **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. No live-data validation claim.** |
 | **3.5.1** | **2026-09-13** | **Integrated stable `src/vnquant/data/providers/` implementations and default non-admitted registry entries; HTTP success remains separate from Source Admission. No live-data validation claim.** |
+| **3.5.2** | **2026-09-13** | **Integrated the persisted `SourceSyncOrchestrator` below app/pipeline entry points, cache-lineage visibility, and fail-closed recommendation gating. Offline tests only; provider admission is unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

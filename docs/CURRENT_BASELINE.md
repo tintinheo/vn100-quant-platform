@@ -19,6 +19,7 @@
 - CafeF: **reference / explicit opt-in validation**, not a silent production fallback or authoritative VN100-membership source.
 - Executable data subsystem: `vn100_multisource_feed_v1` — **IMPLEMENTED + TESTED_OFFLINE, 10/10 PASS**.
 - Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
+- Runtime integration: application startup and the actionable analytics pipeline now consume a persisted governed sync result; absent an admitted provider or accepted cache, candidate generation fails closed with `NO_ADMITTED_PROVIDER`.
 - Real-data validation: **NOT YET PERFORMED**.
 
 ## Mandatory governance
@@ -43,3 +44,4 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | 3.4 | 2026-09-13 | Auto-refresh-on-run / sync-if-stale data ingestion. |
 | **3.5** | **2026-09-13** | **DNSE-first provider research + implemented/offline-tested multi-source scanner.** |
 | **3.5 (integration update)** | **2026-09-13** | **Stable main-package providers registered in non-admitted states; no live-validation or admission status change.** |
+| **3.5 (sync-gate update)** | **2026-09-13** | **Persisted source-sync gate integrated beneath startup and actionable analytics; offline regression tested, with no live-validation or admission status change.** |
