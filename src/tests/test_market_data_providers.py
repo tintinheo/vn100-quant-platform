@@ -6,6 +6,7 @@ import pytest
 
 from vnquant.data.provider_registry import (
     NoAdmittedProvider,
+    ProviderNotAllowed,
     ProviderRegistry,
     ProviderState,
     default_provider_registry,
@@ -112,8 +113,10 @@ def test_authorized_vietstock_http_success_still_does_not_admit_provider():
             "low": "l", "close": "c", "volume": "v",
         },
         units={"price_multiplier": 1},
+        endpoint_semantics="vendor contract operation definitions",
         revision_policy="vendor contract revision clause",
         rate_limits="vendor contract quota",
+        retention_rights="raw and normalized records may be retained",
         usage_rights="authorized for internal research",
     )
     provider = VietstockDataFeedProvider(contract, transport=lambda **kwargs: [{"ticker": "VNM"}])
@@ -130,4 +133,16 @@ def test_cafef_is_disabled_and_reference_only():
     with pytest.raises(ProviderConfigurationError, match="disabled"):
         provider.daily_history("VNM", date(2026, 9, 8), date(2026, 9, 9))
     assert provider.reference_only is True
+    assert provider.primary_eligible is False
     assert "daily_ohlcv" not in provider.capabilities
+
+
+def test_cafef_cannot_be_promoted_to_admitted_provider():
+    registry = ProviderRegistry()
+
+    with pytest.raises(ProviderNotAllowed, match="reference-only"):
+        registry.register(
+            CafeFReferenceProvider(allow_reference_source=True, page_fetcher=lambda url: ""),
+            state=ProviderState.ADMITTED,
+            documented_access=True,
+        )

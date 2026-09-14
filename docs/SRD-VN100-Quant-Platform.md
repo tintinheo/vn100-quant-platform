@@ -25,6 +25,7 @@
 | **3.5.1** | **2026-09-13** | **Integrated DNSE, contract-gated Vietstock, and disabled/reference-only CafeF under `src/vnquant/data/providers/`; default registry is non-admitted and admission is not derived from HTTP success.** |
 | **3.5.2** | **2026-09-13** | **Implemented persisted source-sync orchestration for startup and actionable pipeline execution, explicit stale/degraded cache metadata, and fail-closed candidate gating.** |
 | **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible offline result and made `src/vnquant/` the documented implementation path. No live-validation/admission change.** |
+| **3.5.4** | **2026-09-14** | **Completed the provider contract guardrails: DNSE is explicitly read-only with all unverified live assumptions tagged `[GUESS]`; Vietstock validates endpoint semantics and retention rights before I/O; CafeF is ineligible for admission.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

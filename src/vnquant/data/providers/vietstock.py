@@ -22,8 +22,10 @@ class VietstockDataFeedContract:
     parameters: Mapping[str, str] = field(default_factory=dict)
     schema_mapping: Mapping[str, str] = field(default_factory=dict)
     units: Mapping[str, str | float] = field(default_factory=dict)
+    endpoint_semantics: str = ""
     revision_policy: str = ""
     rate_limits: str = ""
+    retention_rights: str = ""
     usage_rights: str = ""
 
     def validate(self) -> None:
@@ -33,8 +35,10 @@ class VietstockDataFeedContract:
         scalar = {
             "base_url": self.base_url,
             "authentication": self.authentication,
+            "endpoint_semantics": self.endpoint_semantics,
             "revision_policy": self.revision_policy,
             "rate_limits": self.rate_limits,
+            "retention_rights": self.retention_rights,
             "usage_rights": self.usage_rights,
         }
         missing.extend(name for name, value in scalar.items() if not value)
