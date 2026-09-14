@@ -51,6 +51,7 @@ class DNSEProvider(MarketDataProvider):
         client: DNSEMarketDataClient | None = None,
         *,
         client_factory: Callable[[], DNSEMarketDataClient] | None = None,
+        now: Callable[[], datetime] | None = None,
         resolution: str = "1D",  # [GUESS]
         index_name: str = "VN100",  # [GUESS]
         field_map: Mapping[str, str] = DEFAULT_DNSE_FIELD_MAP,  # [GUESS]
@@ -58,6 +59,7 @@ class DNSEProvider(MarketDataProvider):
     ) -> None:
         self._client = client
         self._client_factory = client_factory
+        self._now = now or (lambda: datetime.now(timezone.utc))
         self.resolution = resolution
         self.index_name = index_name
         self.field_map = dict(field_map)
@@ -91,7 +93,7 @@ class DNSEProvider(MarketDataProvider):
         )
         payload = response.json() if callable(getattr(response, "json", None)) else response
         return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
-            datetime.now(timezone.utc), parameters, self.adapter_version, "GET /instruments",
+            self._now(), parameters, self.adapter_version, "GET /instruments",
             self.trust_tier, "not_applicable", "universe_membership")
 
     def normalize_index_members(self, fetched: ProviderFetch) -> list[str]:
@@ -110,7 +112,7 @@ class DNSEProvider(MarketDataProvider):
         )
         payload = response.json() if callable(getattr(response, "json", None)) else response
         return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
-            datetime.now(timezone.utc), parameters, self.adapter_version, "GET /price/ohlc",
+            self._now(), parameters, self.adapter_version, "GET /price/ohlc",
             self.trust_tier, self.raw_price_unit, self.price_semantics)
 
     def normalize_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:

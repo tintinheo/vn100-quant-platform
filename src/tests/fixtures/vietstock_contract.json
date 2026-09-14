@@ -1,0 +1,34 @@
+{
+  "authorized": true,
+  "base_url": "https://licensed.test.invalid",
+  "authentication": {"Authorization": "fake-test-token"},
+  "paths": {
+    "current_index_members": "/members",
+    "daily_history": "/history"
+  },
+  "parameters": {
+    "index_code": "index",
+    "symbol": "ticker",
+    "start": "from",
+    "end": "to"
+  },
+  "schema_mapping": {
+    "symbol": "ticker",
+    "trading_date": "date",
+    "open": "open",
+    "high": "high",
+    "low": "low",
+    "close": "close",
+    "volume": "volume"
+  },
+  "units": {
+    "price_multiplier": 1,
+    "raw_price_unit": "VND",
+    "price_semantics": "raw"
+  },
+  "endpoint_semantics": "offline acceptance fixture",
+  "revision_policy": "immutable offline acceptance fixture",
+  "rate_limits": "no transport is used outside the injected fixture",
+  "retention_rights": "fixture payloads may be retained",
+  "usage_rights": "offline tests only"
+}

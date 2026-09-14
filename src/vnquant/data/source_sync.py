@@ -160,12 +160,14 @@ class SourceSyncOrchestrator:
 
     def __init__(self, data_dir: str | Path = "data", *, registry: ProviderRegistry | None = None,
                  today: Callable[[], date] = date.today,
+                 now: Callable[[], datetime] | None = None,
                  policies: Mapping[str, FreshnessPolicy] | None = None,
                  expected_session: Callable[[date], date] = expected_latest_vietnam_session,
                  runtime_mode: str = "APP_START") -> None:
         self.data_dir = Path(data_dir)
         self.registry = registry or default_provider_registry()
-        self.today, self.expected_session, self.runtime_mode = today, expected_session, runtime_mode
+        self.today, self.now = today, now or (lambda: datetime.now(timezone.utc))
+        self.expected_session, self.runtime_mode = expected_session, runtime_mode
         self.policies = dict(policies or {
             "daily_ohlcv": FreshnessPolicy("daily_ohlcv"),
             "current_index_members": FreshnessPolicy("current_index_members", recheck_sessions=1),
@@ -222,7 +224,7 @@ class SourceSyncOrchestrator:
     def _make_report(self, started: datetime, *, expected: date, **values) -> SyncReport:
         market_date = values.get("last_accepted_market_date")
         return SyncReport(run_id=uuid4().hex, started_at=started.isoformat(),
-                          finished_at=datetime.now(timezone.utc).isoformat(),
+                          finished_at=self.now().isoformat(),
                           data_age_days=(self.today() - date.fromisoformat(market_date)).days if market_date else None,
                           runtime_mode=self.runtime_mode, **values)
 
@@ -239,7 +241,7 @@ class SourceSyncOrchestrator:
             return self._sync_locked(required, force=force)
 
     def _sync_locked(self, required: tuple[str, ...], *, force: bool) -> SyncReport:
-        started, previous = datetime.now(timezone.utc), self.load_result()
+        started, previous = self.now(), self.load_result()
         accepted, expected = self._accepted_cache(previous), self.expected_session(self.today())
         providers, resolution_failure = self._resolve(required)
         watermarks = self.load_watermarks()
@@ -309,12 +311,12 @@ class SourceSyncOrchestrator:
                             Warehouse(self.data_dir).append_canonical_bars(canonical)
                         count += self._merge_bars(frame, symbol)
                     changes[capability], dq[capability] = count, worst
-                now = datetime.now(timezone.utc).isoformat()
+                now = self.now().isoformat()
                 watermarks[f"{provider_id}:{capability}"] = ProviderWatermark(
                     provider_id, capability, expected.isoformat(), now)
 
             self._write_json(self.watermark_path, {k: asdict(v) for k, v in watermarks.items()})
-            now = datetime.now(timezone.utc).isoformat()
+            now = self.now().isoformat()
             report = self._make_report(started, expected=expected, required_capabilities=required,
                 provider_id=providers.get("daily_ohlcv") or next(iter(providers.values())), providers=providers,
                 fresh_before=all_fresh, remote_fetch_performed=fetched,
