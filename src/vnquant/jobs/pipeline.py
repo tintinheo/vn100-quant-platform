@@ -12,6 +12,38 @@ from vnquant.recommendations.engine import detect_candidates
 from vnquant.data.sector_membership import apply_sector_mapping
 from vnquant.data.source_sync import SourceSyncOrchestrator
 from vnquant.data.quality import apply_dq_policy
+from vnquant.config import parameter_value
+
+
+def _official_cap_index(wh: Warehouse, latest_date) -> tuple[pd.Series, str, str | None]:
+    """Return a fresh official cap-index row, or an explicitly unavailable proxy state."""
+    unavailable = pd.Series({"close": pd.NA, "ma50": pd.NA, "ma200": pd.NA})
+    try:
+        indexes = wh.read_table("index_bars")
+    except (FileNotFoundError, OSError):
+        return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "official index data absent"
+    if indexes.empty:
+        return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "official index data absent"
+    indexes = indexes.copy()
+    indexes["trading_date"] = pd.to_datetime(indexes["timestamp"], utc=True).dt.date
+    # VN-Index is the BRD cap-weighted input; VN100 is accepted only when VN-Index is absent.
+    available = set(indexes.index_code.astype(str).str.upper())
+    code = "VNINDEX" if "VNINDEX" in available else ("VN100" if "VN100" in available else None)
+    if code is None:
+        return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "VNINDEX/VN100 official series absent"
+    series = indexes[indexes.index_code.astype(str).str.upper() == code].sort_values("trading_date")
+    if series.trading_date.max() < latest_date:
+        return unavailable, "DEGRADED_PROXY_STALE", f"official {code} series stale"
+    for window in parameter_value("features.ma_windows"):
+        series[f"ma{int(window)}"] = series.close.astype(float).rolling(int(window), min_periods=int(window)).mean()
+    turnover_window = int(parameter_value("market.turnover_window"))
+    turnover_min = int(parameter_value("market.turnover_min_periods"))
+    turnover = pd.to_numeric(series.turnover, errors="coerce")
+    series["turnover_ratio"] = turnover / turnover.rolling(turnover_window, min_periods=turnover_min).mean()
+    row = series[series.trading_date == latest_date]
+    if row.empty:
+        return unavailable, "DEGRADED_PROXY_STALE", f"official {code} latest session missing"
+    return row.iloc[-1], f"OFFICIAL_{code}", None
 
 
 def _publish_blocked_result(sync, publish_dir: str) -> dict:
@@ -52,14 +84,15 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     panel=add_cross_sectional_rs(panel)
     breadth=compute_breadth(panel); ew=build_equal_weight_index(panel)
 
-    # Cap-index proxy in offline mode: current-universe equal-weight series.
-    # A real official VNINDEX/VN100 index series should replace this when ingested.
-    cap=ew.copy()
     latest_date=panel.trading_date.max()
     br=breadth[breadth.trading_date==latest_date].iloc[-1]
     ewr=ew[ew.trading_date==latest_date].iloc[-1]
-    capr=cap[cap.trading_date==latest_date].iloc[-1]
-    rr=compute_regime(capr,ewr,br)
+    capr, cap_mode, cap_warning=_official_cap_index(wh,latest_date)
+    # Official index turnover confirms liquidity. Missing official turnover is
+    # neutral and therefore cannot manufacture a bull classification.
+    regime_breadth=br.copy()
+    regime_breadth["turnover_ratio"] = capr.get("turnover_ratio")
+    rr=compute_regime(capr,ewr,regime_breadth)
     sectors=compute_sector_scores(panel,latest_date)
     latest=panel[panel.trading_date==latest_date].copy()
     dq_score=int(sync.dq_score)
@@ -74,6 +107,7 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     wh.write_table(pd.DataFrame([{
         "as_of":latest_date,"regime":rr.regime.name,"cap_score":rr.cap_score,"ew_score":rr.ew_score,
         "breadth_pct_ma50":rr.breadth_pct_ma50,"turnover_ratio":rr.turnover_ratio,"reason":rr.reason,
+        "cap_index_mode":cap_mode,"cap_index_warning":cap_warning,
     }]),"market_regimes")
     wh.build_duckdb_views()
 
@@ -83,10 +117,11 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     market={"as_of":str(latest_date),"regime":rr.regime.name,"reason":rr.reason,
             "candidate_count":int(len(candidates)),"universe_mode":"CURRENT_UNIVERSE_PROXY",
             "sector_mode":sector_mode,"sector_warning":sector_warning,
-            "cap_index_mode":"EQUAL_WEIGHT_PROXY_UNTIL_OFFICIAL_INDEX_SERIES_INGESTED",
+            "cap_index_mode":cap_mode,"cap_index_warning":cap_warning,
             "sync_mode":sync.mode,"provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
             "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
-            "degraded_mode":sync.degraded_mode,"cache_accepted":sync.cache_accepted,
+            "degraded_mode":bool(sync.degraded_mode or cap_mode.startswith("DEGRADED_PROXY")),
+            "cache_accepted":sync.cache_accepted,
             "status":sync.status,"dq_score":dq_score,
             "actionable":bool(sync.actionable and dq_actionable)}
     (out/"market.json").write_text(json.dumps(market,ensure_ascii=False,indent=2),encoding="utf-8")

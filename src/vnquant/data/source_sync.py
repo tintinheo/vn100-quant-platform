@@ -22,7 +22,7 @@ from decimal import Decimal
 import pandas as pd
 
 from .base import DataMode
-from .models import CanonicalBar, RawSnapshot
+from .models import CanonicalBar, IndexBar, RawSnapshot
 from .provider_registry import ProviderRegistry, default_provider_registry
 from .quality import DataQualityService, validate_bars
 from .storage import Warehouse
@@ -174,6 +174,7 @@ class SourceSyncOrchestrator:
         self.policies = dict(policies or {
             "daily_ohlcv": FreshnessPolicy("daily_ohlcv"),
             "current_index_members": FreshnessPolicy("current_index_members", recheck_sessions=1),
+            "index_daily_ohlct": FreshnessPolicy("index_daily_ohlct"),
         })
         self.report_path = self.data_dir / self.REPORT_NAME
         self.watermark_path = self.data_dir / self.WATERMARK_NAME
@@ -317,6 +318,28 @@ class SourceSyncOrchestrator:
                             Warehouse(self.data_dir).append_canonical_bars(canonical)
                         count += self._merge_bars(frame, symbol)
                     changes[capability], dq[capability] = count, worst
+                elif capability == "index_daily_ohlct":
+                    # [GUESS] VNINDEX is the configured baseline index until its live
+                    # provider literal/schema is verified during admission.
+                    raw = provider.fetch_index_daily_history("VNINDEX", start, expected)
+                    snapshot = self._store_fetch(raw)
+                    snapshots.append(snapshot.snapshot_id)
+                    frame = provider.normalize_index_daily_history(raw)
+                    required_columns = {"index_code", "trading_date", "open", "high", "low", "close", "turnover"}
+                    if frame.empty or not required_columns.issubset(frame.columns):
+                        raise RuntimeError("DQ failed: incomplete official index OHLC/turnover")
+                    if max(frame.trading_date) < expected:
+                        raise RuntimeError("DQ failed: stale official index series")
+                    canonical = [self._canonical_index(row, raw, snapshot) for _, row in frame.iterrows()]
+                    path = self.data_dir / "parquet" / "index_bars.parquet"
+                    if path.exists():
+                        existing = pd.read_parquet(path)
+                        keys = set(zip(existing.index_code, existing.timestamp, existing.provider))
+                        canonical = [bar for bar in canonical
+                                     if (bar.index_code, bar.timestamp, bar.provider) not in keys]
+                    if canonical:
+                        Warehouse(self.data_dir).append_index_bars(canonical)
+                    changes[capability], dq[capability] = len(canonical), "PASS"
                 now = self.now().isoformat()
                 watermarks[f"{provider_id}:{capability}"] = ProviderWatermark(
                     provider_id, capability, expected.isoformat(), now)
@@ -369,6 +392,18 @@ class SourceSyncOrchestrator:
             snapshot.snapshot_id, fetched.trust_tier, fetched.raw_price_unit,
             fetched.price_semantics, json.dumps(fetched.request_parameters, sort_keys=True),
             fetched.adapter_version, fetched.source_reference, snapshot.payload_sha256)
+
+    @staticmethod
+    def _canonical_index(row, fetched, snapshot) -> IndexBar:
+        decimal = lambda value: None if pd.isna(value) else Decimal(str(value))
+        return IndexBar(
+            datetime.combine(row.trading_date, day_time.min, tzinfo=timezone.utc),
+            str(row.index_code).upper(), decimal(row.open), decimal(row.high),
+            decimal(row.low), decimal(row.close), decimal(row.turnover),
+            fetched.provider, fetched.retrieved_at, (), snapshot.snapshot_id,
+            fetched.trust_tier, fetched.raw_price_unit, fetched.price_semantics,
+            json.dumps(fetched.request_parameters, sort_keys=True), fetched.adapter_version,
+            fetched.source_reference, snapshot.payload_sha256)
 
     def _members(self) -> list[str]:
         table = self.data_dir / "parquet" / "security_master.parquet"

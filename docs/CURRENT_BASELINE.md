@@ -25,6 +25,7 @@
 - Data quality: one canonical service now evaluates ingestion/storage observations, persists revision-linked results and synchronization history, and applies the BRD's `[D]` confidence cap (70) and actionable block threshold (50).
 - Real-data validation: **NOT YET PERFORMED**.
 - Parameter governance: configurable analytics/runtime thresholds are packaged in versioned `src/vnquant/config/quant_parameters.v1.yaml`; unverified defaults are `[D] [GUESS]` with explicit calibration or verification requirements, while structural identities remain `[S]`. Offline tested only.
+- Regime index data: canonical official VN-Index/VN100 OHLC and turnover now have immutable raw-snapshot lineage. The cap and equal-weight legs are independent; absent/stale official index data is exposed as degraded and cannot produce a bull classification. Offline tested only; no index feed is live validated/admitted.
 
 ## Mandatory governance
 
@@ -64,6 +65,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (sync-check routing clarification)** | **2026-09-14** | **Codified that app runs check synchronization state rather than calling all providers: admitted DNSE is preferred per capability, fresh state avoids I/O, Vietstock remains contract/admission-gated, and CafeF remains explicit sampled validation only. No provider/admission/live-validation change.** |
 
 | **3.5 (PIT reference-data governance)** | **2026-09-14** | **Added official-review snapshot ingestion, effective-dated sector taxonomy, and strict historical-backtest/capital-qualification gates. Offline tested only; no live-validation/admission change.** |
+| **3.5 (official-index regime input)** | **2026-09-14** | **Added canonical lineaged official-index OHLC/turnover ingestion and independent dual-index regime inputs; absent/stale official data now emits a degraded non-bull state. Offline tested only; no live-validation/admission change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

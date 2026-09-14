@@ -53,6 +53,13 @@ class MarketDataProvider(ABC):
     def normalize_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
         raise NotImplementedError
 
+    def fetch_index_daily_history(self, index_code: str, start: date, end: date) -> ProviderFetch:
+        """Fetch official index OHLC/turnover evidence (never a constituent proxy)."""
+        raise NotImplementedError("provider must implement raw index history fetch")
+
+    def normalize_index_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
+        raise NotImplementedError
+
     # Compatibility conveniences. Ingestion code must use fetch -> snapshot -> normalize.
     def current_index_members(self, index_code: str = "VN100") -> list[str]:
         return self.normalize_index_members(self.fetch_current_index_members(index_code))
