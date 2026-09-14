@@ -17,8 +17,9 @@
 - Leading automated market-data candidate: **DNSE OpenAPI `[GUESS]`** — documented and adapter implemented, but **NOT ADMITTED / NOT LIVE VALIDATED**.
 - Licensed secondary/alternative candidate: **Vietstock DataFeed `[GUESS]`** — generic contract-gated adapter implemented; live contract/access pending.
 - CafeF: **reference / explicit opt-in validation**, not a silent production fallback or authoritative VN100-membership source.
-- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 56 offline tests on 2026-09-14.
+- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 60 offline tests on 2026-09-14.
 - Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
+- Provider governance: structured evidence and the enforced `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED` lifecycle now replace the prior boolean access flag; no provider advanced from its prior state.
 - Runtime integration: application startup and the actionable analytics pipeline now consume a persisted governed sync result; absent an admitted provider or accepted cache, candidate generation fails closed with `NO_ADMITTED_PROVIDER`.
 - Real-data validation: **NOT YET PERFORMED**.
 
@@ -47,3 +48,4 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (sync-gate update)** | **2026-09-13** | **Persisted source-sync gate integrated beneath startup and actionable analytics; offline regression tested, with no live-validation or admission status change.** |
 | **3.5 (artifact audit)** | **2026-09-14** | **Recorded that `vn100_multisource_feed_v1` was never committed here, removed the unreproducible 10/10 claim, and identified `src/vnquant/` as the maintained implementation path. No live-validation or admission status change.** |
 | **3.5 (provider hardening)** | **2026-09-14** | **Completed fail-closed provider guardrails for the maintained adapters, including the full authorized Vietstock contract gate and a non-promotable CafeF reference role. All providers remain NOT ADMITTED / NOT LIVE VALIDATED.** |
+| **3.5 (admission evidence)** | **2026-09-14** | **Replaced the registry's boolean access flag with structured evidence and enforced lifecycle transitions. Offline suite: 60 passed; no live-validation or provider-admission change.** |

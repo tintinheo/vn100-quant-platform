@@ -5,6 +5,7 @@ from datetime import date
 import pytest
 
 from vnquant.data.provider_registry import (
+    AdmissionEvidence,
     NoAdmittedProvider,
     ProviderNotAllowed,
     ProviderRegistry,
@@ -53,7 +54,7 @@ def test_default_implementations_are_registered_but_not_admitted():
 def test_dnse_http_success_does_not_promote_admission():
     provider = DNSEProvider(client=SuccessfulDNSEClient())
     registry = ProviderRegistry()
-    registry.register(provider, state=ProviderState.CANDIDATE, documented_access=True)
+    registry.register(provider, evidence=AdmissionEvidence())
 
     assert provider.current_index_members() == ["VNM"]
     assert not provider.daily_history("VNM", date(2026, 9, 8), date(2026, 9, 9)).empty
@@ -65,15 +66,17 @@ def test_dnse_http_success_does_not_promote_admission():
     "state",
     [
         ProviderState.CANDIDATE,
-        ProviderState.DOCTOR_PASSED,
-        ProviderState.CROSS_VALIDATED,
         ProviderState.RESEARCH_ONLY,
+        ProviderState.SUSPENDED,
     ],
 )
 def test_every_non_admitted_governance_state_remains_unselectable(state):
     provider = DNSEProvider(client=SuccessfulDNSEClient())
     registry = ProviderRegistry()
-    registry.register(provider, state=state, documented_access=True)
+    initial = ProviderState.CANDIDATE if state is ProviderState.SUSPENDED else state
+    registry.register(provider, state=initial, evidence=AdmissionEvidence())
+    if state is ProviderState.SUSPENDED:
+        registry.transition(provider.provider_id, state)
 
     # A successful provider response is operational evidence, not admission.
     assert provider.current_index_members() == ["VNM"]
@@ -121,7 +124,7 @@ def test_authorized_vietstock_http_success_still_does_not_admit_provider():
     )
     provider = VietstockDataFeedProvider(contract, transport=lambda **kwargs: [{"ticker": "VNM"}])
     registry = ProviderRegistry()
-    registry.register(provider, state=ProviderState.CANDIDATE, documented_access=True)
+    registry.register(provider, evidence=AdmissionEvidence())
 
     assert provider.current_index_members() == ["VNM"]
     assert registry.registration("vietstock_datafeed").state is ProviderState.CANDIDATE
@@ -139,10 +142,17 @@ def test_cafef_is_disabled_and_reference_only():
 
 def test_cafef_cannot_be_promoted_to_admitted_provider():
     registry = ProviderRegistry()
+    provider = CafeFReferenceProvider(allow_reference_source=True, page_fetcher=lambda url: "")
+    registry.register(provider, state=ProviderState.RESEARCH_ONLY, evidence=AdmissionEvidence())
 
-    with pytest.raises(ProviderNotAllowed, match="reference-only"):
-        registry.register(
-            CafeFReferenceProvider(allow_reference_source=True, page_fetcher=lambda url: ""),
-            state=ProviderState.ADMITTED,
-            documented_access=True,
-        )
+    with pytest.raises(ProviderNotAllowed, match="RESEARCH_ONLY -> ADMITTED"):
+        registry.transition(provider.provider_id, ProviderState.ADMITTED)
+
+
+def test_incomplete_vietstock_contract_cannot_pass_doctor_state():
+    registry = ProviderRegistry()
+    provider = VietstockDataFeedProvider()
+    registry.register(provider, evidence=AdmissionEvidence())
+
+    with pytest.raises(ProviderNotAllowed, match="provider contract is incomplete"):
+        registry.transition(provider.provider_id, ProviderState.DOCTOR_PASSED)
