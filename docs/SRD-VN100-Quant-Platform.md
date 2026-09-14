@@ -34,6 +34,7 @@
 | **3.5.10** | **2026-09-14** | **Quarantined the historical v3.1 SSI archive/report behind package, built-distribution, dependency, import, and pytest-discovery checks while retaining negative SSI retirement coverage.** |
 | **3.5.11** | **2026-09-14** | **Implemented the §§25.2/26.8 offline acceptance harness with deterministic injectable clocks, fake DNSE SDK calls, an injected Vietstock contract fixture, local CafeF HTML, temporary warehouses, raw-order/lineage assertions, idempotence, and concurrent-rerun coverage. Full suite: 99 passed; admission/live-validation status is unchanged.** |
 | **3.5.12** | **2026-09-14** | **Audited every implementation-status statement against tracked contents and reconciled §§23.1, 24.4, 25.3, 26.9, and 27.2: `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` functionality is implemented/offline-tested. Full suite: 99 passed; no admission/live-validation claim.** |
+| **3.5.13** | **2026-09-14** | **Consolidated versioned BRD/SRD copies, standalone version changelogs/reports, and duplicate ZIP bundles into the stable canonical document set. Historical details remain in Git; no software requirement, runtime behavior, provider status, or live-validation status changed.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
