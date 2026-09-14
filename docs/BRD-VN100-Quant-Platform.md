@@ -28,6 +28,7 @@
 | **3.5.4** | **2026-09-14** | **Hardened provider boundaries: Vietstock now requires endpoint semantics and retention rights in addition to the other authorized contract fields, CafeF cannot be admitted, and all DNSE live assumptions remain `[GUESS]`. Provider admission status is unchanged.** |
 | **3.5.5** | **2026-09-14** | **Replaced the registry's documented-access flag with structured admission evidence and an enforced lifecycle. No admission/live-validation status changed.** |
 | **3.5.6** | **2026-09-14** | **Made the synchronization outcome a mandatory app/pipeline gate, published `NO_ADMITTED_PROVIDER` when neither an admitted provider nor policy-accepted cache exists, exposed cache/degraded lineage, and suppressed stale actionable artifacts. Offline tested only.** |
+| **3.5.7** | **2026-09-14** | **Completed capability-specific freshness, provider/capability watermarks, deterministic rerun keys, synchronization locking, incremental/recheck fetches, raw snapshot lineage, and explicit force refresh. Weekday-only calendar and recheck defaults remain `[GUESS]`; provider admission is unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
