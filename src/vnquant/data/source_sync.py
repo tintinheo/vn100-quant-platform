@@ -157,6 +157,9 @@ def expected_latest_vietnam_session(today: date, holidays: frozenset[date] = fro
 class SourceSyncOrchestrator:
     REPORT_NAME = "source_sync_result.json"
     WATERMARK_NAME = "provider_watermarks.json"
+    # [GUESS] BRD v3.5 routing preference. Admission remains the hard gate;
+    # this order never makes a candidate selectable and never fans out a run.
+    PROVIDER_PREFERENCE = ("dnse_openapi", "vietstock_datafeed")
 
     def __init__(self, data_dir: str | Path = "data", *, registry: ProviderRegistry | None = None,
                  today: Callable[[], date] = date.today,
@@ -218,7 +221,10 @@ class SourceSyncOrchestrator:
             admitted = self.registry.admitted_provider_ids(capability)
             if not admitted:
                 return selected, "NO_ADMITTED_PROVIDER"
-            selected[capability] = admitted[0]
+            selected[capability] = next(
+                (provider_id for provider_id in self.PROVIDER_PREFERENCE if provider_id in admitted),
+                admitted[0],
+            )
         return selected, None
 
     def _make_report(self, started: datetime, *, expected: date, **values) -> SyncReport:

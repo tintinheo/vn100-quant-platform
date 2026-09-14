@@ -36,6 +36,7 @@
 | **3.5.12** | **2026-09-14** | **Audited every implementation-status statement against tracked contents and reconciled §§23.1, 24.4, 25.3, 26.9, and 27.2: `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` functionality is implemented/offline-tested. Full suite: 99 passed; no admission/live-validation claim.** |
 | **3.5.13** | **2026-09-14** | **Consolidated versioned BRD/SRD copies, standalone version changelogs/reports, and duplicate ZIP bundles into the stable canonical document set. Historical details remain in Git; no software requirement, runtime behavior, provider status, or live-validation status changed.** |
 | **3.5.14** | **2026-09-14** | **Implemented a packaged, schema/version-checked quantitative parameter registry and removed configurable literals/default arguments from DQ, features, market/regime/sector, recommendations and doctor paths. Registry validation requires every unverified default to be `[D] [GUESS]` with an explicit calibration/verification requirement. Full suite: 101 passed offline.** |
+| **3.5.15** | **2026-09-14** | **Made the single-provider, admission-gated DNSE-first routing rule explicit and regression-tested that routine/fresh reruns do not fan out to every provider. Vietstock and CafeF legal gates remain unchanged; offline tested only.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1969,6 +1970,15 @@ For each capability:
 11. atomically publish accepted canonical revision
 12. persist SyncReport
 ```
+
+Steps 1–6 execute independently for each required capability. Provider resolution
+must include only `ADMITTED` registrations. Where DNSE and Vietstock are both
+admitted for the same capability, the v3.5 `[GUESS]` preference chooses DNSE;
+the orchestrator must not fan out to all providers. Vietstock additionally remains
+blocked until its authorized contract is complete. CafeF is excluded from normal
+capability resolution and can run only through an explicit, rights-permitted
+sampled cross-validation path. A force refresh rechecks the selected admitted
+provider; it does not authorize a three-provider sweep.
 
 A provider/config-specific recheck lookback may be used to detect vendor corrections; the window is `[GUESS]` until measured against the admitted provider's actual revision behaviour.
 

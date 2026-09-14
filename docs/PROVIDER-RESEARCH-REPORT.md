@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.6 — 2026-09-14**
+**Current internal revision:** **1.7 — 2026-09-14**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -18,6 +18,7 @@
 | **1.4** | **2026-09-14** | **Implemented evidence-backed admission records and legal lifecycle transitions. Provider research evidence/admission is unchanged.** |
 | **1.5** | **2026-09-14** | **Documented the v3.1 SSI adapter and doctor/bootstrap archive as historical/disabled and added repository isolation checks. Provider evidence and admission are unchanged.** |
 | **1.6** | **2026-09-14** | **Reconciled all canonical implementation-status statements with tracked repository contents: standalone `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` provider/sync implementation passes 99 offline tests. No provider evidence, admission, or live-validation change.** |
+| **1.7** | **2026-09-14** | **Clarified the runtime decision: synchronization checks do not imply unconditional three-provider calls. DNSE-first resolution remains admission/freshness-gated, Vietstock remains contract/capability-admission-gated, and CafeF remains disabled except for explicit rights-permitted sampled validation. No new provider evidence or status change.** |
 
 ## 1. Kết luận
 
@@ -42,6 +43,10 @@
 
 **Decision:** implement read-only DNSE adapter; chưa production-admit cho đến live validation.
 
+At runtime, DNSE is considered only after admission and is fetched only when the
+required capability is stale, incomplete, inside its approved revision recheck,
+or explicitly force-refreshed. A fresh synchronization check reuses accepted cache.
+
 ## 2. Vietstock DataFeed
 
 **Verified:** Vietstock Service Center công bố DataFeed cung cấp thông tin/dữ liệu tài chính qua **API hoặc Sync Data**, phù hợp fintech/định chế/NĐT chuyên nghiệp. `api.vietstock.vn` tồn tại và mô tả dữ liệu realtime, company info, BCTC, macro data.
@@ -57,6 +62,13 @@
 **Gap:** chưa verify official documented public API contract tương đương DNSE.
 
 **Decision:** implement `CafeFReferenceProvider` bằng public HTML table, **explicit opt-in**, rate-limited/reference-only. Giá được chuyển từ thousand VND sang canonical VND. Không dùng CafeF làm authoritative VN100 membership hoặc silent production fallback.
+
+Routine startup must not call all three providers. Vietstock can participate only
+after its authorized contract and relevant capabilities are admitted. CafeF stays
+disabled unless a user explicitly requests a rights-permitted sampled validation.
+Any future all-three-on-every-run requirement is a material policy/legal change
+requiring synchronized BRD/BRD-VI/SRD/baseline/provider-report updates after the
+Vietstock licensing and CafeF automation-rights gaps are resolved.
 
 ## 4. Trạng thái artifact thực tế
 

@@ -36,6 +36,7 @@
 | **3.5.12** | **2026-09-14** | **Reconciled every implementation-status statement with tracked repository contents: the standalone `vn100_multisource_feed_v1` package is absent, while `src/vnquant/` is the maintained SSI-free implementation and its full suite passes 99 offline tests. No live-validation/admission claim.** |
 | **3.5.13** | **2026-09-14** | **Consolidated the retained v3.3/v3.5 BRD copies and duplicate ZIP bundles into this stable canonical file. Historical wording and withdrawn claims remain recoverable in Git; no business rule, provider status, or live-validation status changed.** |
 | **3.5.14** | **2026-09-14** | **Audited runtime constants/default arguments and moved configurable DQ, feature, regime, sector, recommendation, doctor and slippage values into the versioned `quant_parameters.v1.yaml` registry. Every unverified runtime value is literal `[D] [GUESS]` with a calibration/verification requirement; structural score/base and market-rule identities remain `[S]`. Full suite: 101 passed offline.** |
+| **3.5.15** | **2026-09-14** | **Clarified that every run is a synchronization check, not a three-provider fetch: capability state and explicit force determine I/O; only admitted providers are eligible, DNSE is preferred, Vietstock remains contract/admission-gated, and CafeF remains explicit sampled validation. Full suite: 102 passed offline; no admission/live-validation status change.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1818,6 +1819,20 @@ intraday_snapshot   # optional; not required for EOD-first v3.4
 ```
 
 An app run always checks freshness/completeness for the capabilities required by the selected workflow. A remote fetch occurs only when policy says that capability is stale, incomplete, revised, or explicitly force-refreshed.
+
+This check is not an unconditional provider call. DNSE may be selected only after
+admission and only for a required capability whose state requires I/O under the
+preceding rule. If both DNSE and Vietstock are admitted for that capability, the
+`[GUESS]` v3.5 routing preference selects DNSE without also calling Vietstock.
+Vietstock is eligible only after its authorized contract and relevant capability
+admission. CafeF stays disabled by default and may be invoked only by an explicit,
+rights-permitted sampled cross-validation workflow; it is never part of routine
+startup fan-out.
+
+A product-owner request to call all three providers on every run is a material
+policy change, not a force-refresh interpretation. It requires resolution of
+Vietstock licensing and CafeF automation rights plus synchronized updates to both
+BRDs, the SRD, baseline, and provider report before implementation.
 
 ## 28.4. Vietstock role
 

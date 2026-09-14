@@ -36,6 +36,7 @@
 | **3.5.12** | **2026-09-14** | **Đối chiếu toàn bộ statement về implementation với nội dung repository được track: package độc lập `vn100_multisource_feed_v1` không có, còn `src/vnquant/` là implementation SSI-free được duy trì và full suite pass 99 tests offline. Không claim live validation/admission.** |
 | **3.5.13** | **2026-09-14** | **Hợp nhất các bản BRD v3.3/v3.5 và ZIP bundle trùng lặp vào file canonical ổn định này. Nội dung lịch sử và các claim đã rút lại vẫn có thể truy xuất trong Git; không thay đổi business rule, trạng thái provider hoặc live validation.** |
 | **3.5.14** | **2026-09-14** | **Audit constant/default argument runtime và chuyển các giá trị DQ, feature, regime, sector, recommendation, doctor và slippage có thể cấu hình vào registry có version `quant_parameters.v1.yaml`. Mọi giá trị chưa xác minh mang literal `[D] [GUESS]` cùng yêu cầu calibration/verification; identity về score/base và market rule mang `[S]`. Full suite: 101 passed offline.** |
+| **3.5.15** | **2026-09-14** | **Làm rõ mỗi lần chạy là synchronization check, không phải fetch cả ba provider: capability state và force rõ ràng quyết định I/O; chỉ provider admitted mới hợp lệ, ưu tiên DNSE, Vietstock vẫn contract/admission-gated và CafeF chỉ dùng để sampled validation rõ ràng. Full suite: 102 passed offline; không thay đổi trạng thái admission/live validation.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1258,6 +1259,19 @@ intraday_snapshot   # optional, không bắt buộc cho EOD-first
 ```
 
 Mỗi lần app chạy đều kiểm tra freshness/completeness của các capability cần cho workflow hiện tại; chỉ gọi remote provider khi policy xác định dữ liệu stale, thiếu, có revision hoặc người dùng force refresh.
+
+Sync check không phải là lệnh gọi provider vô điều kiện. Chỉ được chọn DNSE sau
+khi admission và chỉ khi capability bắt buộc cần I/O theo quy tắc trên. Nếu DNSE
+và Vietstock đều admitted cho capability đó, routing preference v3.5 `[GUESS]`
+chọn DNSE mà không gọi thêm Vietstock. Vietstock chỉ hợp lệ sau khi authorized
+contract và capability liên quan được admitted. CafeF mặc định bị disable và chỉ
+được gọi trong workflow sampled cross-validation rõ ràng, khi quyền sử dụng cho
+phép; CafeF không nằm trong routine startup fan-out.
+
+Nếu product owner yêu cầu gọi cả ba provider ở mọi lần chạy, đó là thay đổi policy
+material, không phải cách hiểu của force refresh. Trước khi implement phải giải
+quyết licensing Vietstock và automation rights CafeF, rồi cập nhật đồng bộ cả hai
+BRD, SRD, baseline và provider report.
 
 ## 28.4. Vai trò Vietstock
 

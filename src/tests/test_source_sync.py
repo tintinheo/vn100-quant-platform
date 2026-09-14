@@ -55,6 +55,14 @@ class CountingProvider(MarketDataProvider):
         return pd.DataFrame(rows)
 
 
+class CountingDNSEProvider(CountingProvider):
+    provider_id = "dnse_openapi"
+
+
+class CountingVietstockProvider(CountingProvider):
+    provider_id = "vietstock_datafeed"
+
+
 def registry_for(provider):
     registry = ProviderRegistry()
     evidence = AdmissionEvidence(
@@ -101,6 +109,28 @@ def test_fresh_cache_avoids_duplicate_remote_fetch(tmp_path):
     assert provider.calls == 1
     reports = pd.read_parquet(tmp_path / "parquet" / "sync_reports.parquet")
     assert reports.run_id.tolist() == [first.run_id]
+
+
+def test_sync_prefers_admitted_dnse_without_calling_every_provider(tmp_path):
+    dnse = CountingDNSEProvider()
+    vietstock = CountingVietstockProvider()
+    registry = registry_for(vietstock)
+    dnse_registration = registry_for(dnse).registration(dnse.provider_id)
+    registry.register(dnse, evidence=dnse_registration.evidence)
+    registry.transition(dnse.provider_id, ProviderState.DOCTOR_PASSED)
+    registry.transition(dnse.provider_id, ProviderState.CROSS_VALIDATED)
+    registry.transition(dnse.provider_id, ProviderState.ADMITTED)
+
+    sync = SourceSyncOrchestrator(tmp_path, registry=registry,
+                                  today=lambda: date(2026, 9, 14))
+    first = sync.sync()
+    second = sync.sync()
+
+    assert first.provider_id == "dnse_openapi"
+    assert set(first.providers.values()) == {"dnse_openapi"}
+    assert dnse.calls == 1
+    assert vietstock.calls == 0
+    assert second.run_id == first.run_id
 
 
 def test_streamlit_rerun_does_not_refetch_same_state(tmp_path):
