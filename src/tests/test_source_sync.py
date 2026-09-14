@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
+import json
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
-from vnquant.data.base import DataMode, MarketDataProvider
+from vnquant.data.base import DataMode, MarketDataProvider, ProviderFetch
 from vnquant.data.provider_registry import (
     AdmissionEvidence,
     ProviderRegistry,
@@ -25,17 +26,32 @@ class CountingProvider(MarketDataProvider):
         self.calls = 0
         self.fail = fail
 
-    def current_index_members(self, index_code="VN100"):
+    def _fetch(self, payload, parameters, source):
         if self.fail:
             raise RuntimeError("temporary provider outage")
-        return ["AAA"]
+        return ProviderFetch(self.provider_id, json.dumps(payload).encode(),
+            datetime.now(timezone.utc), parameters, "test-adapter-1", source,
+            "admitted_test", "VND", "raw")
 
-    def daily_history(self, symbol, start, end):
+    def fetch_current_index_members(self, index_code="VN100"):
+        return self._fetch(["AAA"], {"index_code": index_code}, "test://members")
+
+    def normalize_index_members(self, fetched):
+        return json.loads(fetched.payload)
+
+    def fetch_daily_history(self, symbol, start, end):
         self.calls += 1
-        return pd.DataFrame([{"symbol": symbol, "trading_date": end, "open": 10.0,
-                              "high": 11.0, "low": 9.0, "close": 10.5,
-                              "volume": 100, "value": 1050.0,
-                              "provider": self.provider_id}])
+        return self._fetch([{"symbol": symbol, "trading_date": end.isoformat(), "open": 10.0,
+            "high": 11.0, "low": 9.0, "close": 10.5, "volume": 100,
+            "value": 1050.0}], {"symbol": symbol, "start": start.isoformat(),
+            "end": end.isoformat()}, "test://bars")
+
+    def normalize_daily_history(self, fetched):
+        rows = json.loads(fetched.payload)
+        for row in rows:
+            row["trading_date"] = date.fromisoformat(row["trading_date"])
+            row["provider"] = self.provider_id
+        return pd.DataFrame(rows)
 
 
 def registry_for(provider):

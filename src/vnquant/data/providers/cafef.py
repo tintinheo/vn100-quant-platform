@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pandas as pd
 
-from ..base import CANONICAL_COLUMNS, DataMode, MarketDataProvider
+from ..base import CANONICAL_COLUMNS, DataMode, MarketDataProvider, ProviderFetch
 from .common import ProviderConfigurationError, ProviderResponseError
 
 
@@ -17,6 +17,7 @@ class CafeFReferenceProvider(MarketDataProvider):
     data_mode = DataMode.REAL
     reference_only = True
     primary_eligible = False
+    adapter_version = "1"
 
     def __init__(
         self,
@@ -33,14 +34,24 @@ class CafeFReferenceProvider(MarketDataProvider):
         if self.page_fetcher is None:
             raise ProviderConfigurationError("an authorized public-HTML page fetcher is required")
 
-    def current_index_members(self, index_code: str = "VN100") -> list[str]:
+    def fetch_current_index_members(self, index_code: str = "VN100") -> ProviderFetch:
         raise ProviderConfigurationError("CafeF is not an authoritative VN100 membership source")
 
-    def daily_history(self, symbol: str, start: date, end: date) -> pd.DataFrame:
+    def normalize_index_members(self, fetched: ProviderFetch) -> list[str]:
+        raise ProviderConfigurationError("CafeF is not an authoritative VN100 membership source")
+
+    def fetch_daily_history(self, symbol: str, start: date, end: date) -> ProviderFetch:
         self._require_enabled()
         # Public HTML only; never an undocumented JSON/XHR endpoint.
         url = f"https://cafef.vn/du-lieu/lich-su-giao-dich-{symbol.lower()}-1.chn"
-        tables = pd.read_html(self.page_fetcher(url))
+        payload = self.page_fetcher(url).encode("utf-8")
+        return ProviderFetch(self.provider_id, payload, datetime.now(timezone.utc),
+            {"symbol": symbol.upper(), "start": start.isoformat(), "end": end.isoformat()},
+            self.adapter_version, url, "reference_only", "thousand_VND", "adjustment_semantics_unverified")
+
+    def normalize_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
+        from io import BytesIO
+        tables = pd.read_html(BytesIO(fetched.payload))
         if not tables:
             raise ProviderResponseError("CafeF public page contains no table")
         aliases = {
@@ -59,9 +70,10 @@ class CafeFReferenceProvider(MarketDataProvider):
                 raise ProviderResponseError(f"CafeF HTML layout lacks {canonical!r}")
             selected[canonical] = table[match]
         frame = pd.DataFrame(selected)
-        frame["symbol"] = symbol.upper()
+        frame["symbol"] = str(fetched.request_parameters["symbol"])
         frame["provider"] = self.provider_id
         frame["trading_date"] = pd.to_datetime(frame["trading_date"], dayfirst=True, errors="raise").dt.date
+        start, end = (date.fromisoformat(str(fetched.request_parameters[key])) for key in ("start", "end"))
         frame = frame[(frame["trading_date"] >= start) & (frame["trading_date"] <= end)]
         for column in ("open", "high", "low", "close"):
             frame[column] = pd.to_numeric(frame[column], errors="raise") * 1_000

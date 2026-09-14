@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from datetime import date
+from datetime import date, datetime, timezone
+import json
 from typing import Any, Protocol
 
 import pandas as pd
 
-from ..base import DataMode, MarketDataProvider
+from ..base import DataMode, MarketDataProvider, ProviderFetch
 from .common import ProviderConfigurationError, ProviderResponseError, canonical_frame, unix_seconds
 
 
@@ -40,6 +41,10 @@ class DNSEProvider(MarketDataProvider):
     capabilities = frozenset({"daily_ohlcv", "current_index_members"})
     data_mode = DataMode.REAL
     read_only = True
+    adapter_version = "1"
+    trust_tier = "candidate"
+    raw_price_unit = "provider_native_[GUESS]"
+    price_semantics = "raw_ohlc_[GUESS]"
 
     def __init__(
         self,
@@ -78,28 +83,39 @@ class DNSEProvider(MarketDataProvider):
             raise ProviderResponseError("unverified DNSE response does not contain a record list")
         return payload
 
-    def current_index_members(self, index_code: str = "VN100") -> list[str]:
+    def fetch_current_index_members(self, index_code: str = "VN100") -> ProviderFetch:
+        parameters = {"index_name": index_code or self.index_name, "limit": 100, "page": 1,
+                      "dry_run": False}
         response = self.client.get_instruments(
-            index_name=index_code or self.index_name, limit=100, page=1, dry_run=False
+            **parameters
         )
-        records = self._records(response)
+        payload = response.json() if callable(getattr(response, "json", None)) else response
+        return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
+            datetime.now(timezone.utc), parameters, self.adapter_version, "GET /instruments",
+            self.trust_tier, "not_applicable", "universe_membership")
+
+    def normalize_index_members(self, fetched: ProviderFetch) -> list[str]:
+        records = self._records(json.loads(fetched.payload))
         symbols = [str(row.get("symbol", "")).strip().upper() for row in records]
         if not symbols or any(not symbol for symbol in symbols):
             raise ProviderResponseError("DNSE instrument response has no complete symbol list")
         return sorted(set(symbols))
 
-    def daily_history(self, symbol: str, start: date, end: date) -> pd.DataFrame:
+    def fetch_daily_history(self, symbol: str, start: date, end: date) -> ProviderFetch:
+        parameters = {"bar_type": "STOCK", "query": {"symbol": symbol.upper(),
+            "resolution": self.resolution, "from": unix_seconds(start), "to": unix_seconds(end)},
+            "dry_run": False}
         response = self.client.get_ohlc(
-            bar_type="STOCK",
-            query={
-                "symbol": symbol.upper(),
-                "resolution": self.resolution,
-                "from": unix_seconds(start),
-                "to": unix_seconds(end),
-            },
-            dry_run=False,
+            **parameters,
         )
-        records = [dict(row, symbol=row.get("symbol", symbol.upper())) for row in self._records(response)]
+        payload = response.json() if callable(getattr(response, "json", None)) else response
+        return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
+            datetime.now(timezone.utc), parameters, self.adapter_version, "GET /price/ohlc",
+            self.trust_tier, self.raw_price_unit, self.price_semantics)
+
+    def normalize_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
+        symbol = str(fetched.request_parameters["query"]["symbol"])
+        records = [dict(row, symbol=row.get("symbol", symbol)) for row in self._records(json.loads(fetched.payload))]
         date_field = self.field_map.get("trading_date")
         # [GUESS] The default schema treats numeric timestamps as Unix seconds.
         if date_field:

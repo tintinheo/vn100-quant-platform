@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal, Mapping
 
 
 def _utc(value: datetime, field: str) -> None:
@@ -22,6 +22,11 @@ class RawSnapshot:
     payload: bytes
     payload_sha256: str
     source_reference: str | None = None
+    request_parameters: Mapping[str, Any] | None = None
+    adapter_version: str | None = None
+    trust_tier: str | None = None
+    raw_price_unit: str | None = None
+    price_semantics: str | None = None
 
     def __post_init__(self) -> None:
         import hashlib
@@ -47,6 +52,13 @@ class CanonicalBar:
     ingested_at: datetime
     quality_flags: tuple[str, ...]
     raw_snapshot_id: str
+    trust_tier: str = "unknown"
+    raw_price_unit: str = "unknown"
+    price_semantics: str = "unknown"
+    request_parameters: str = "{}"
+    adapter_version: str = "unknown"
+    source_reference: str = "unknown"
+    payload_sha256: str = "unknown"
 
     def __post_init__(self) -> None:
         _utc(self.timestamp, "timestamp")

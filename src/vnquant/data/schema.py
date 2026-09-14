@@ -11,6 +11,8 @@ CANONICAL_BAR_FIELDS = (
     "timestamp", "symbol", "open", "high", "low", "close", "volume",
     "turnover", "adj_close", "provider", "ingested_at", "quality_flags",
     "raw_snapshot_id",
+    "trust_tier", "raw_price_unit", "price_semantics", "request_parameters",
+    "adapter_version", "source_reference", "payload_sha256",
 )
 
 

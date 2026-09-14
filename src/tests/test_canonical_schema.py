@@ -21,7 +21,8 @@ def test_canonical_daily_bar_schema_is_stable_and_keeps_lineage():
         "timestamp", "symbol", "open", "high", "low", "close", "volume",
         "turnover", "adj_close", "provider", "ingested_at", "quality_flags",
     )
-    assert CANONICAL_BAR_FIELDS[-1] == "raw_snapshot_id"
+    assert "raw_snapshot_id" in CANONICAL_BAR_FIELDS
+    assert CANONICAL_BAR_FIELDS[-1] == "payload_sha256"
 
 
 def test_raw_and_adjusted_prices_are_distinct_fields():
