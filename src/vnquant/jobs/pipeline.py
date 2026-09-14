@@ -10,6 +10,7 @@ from vnquant.market.regime import compute_regime
 from vnquant.market.sector_rotation import compute_sector_scores
 from vnquant.recommendations.engine import detect_candidates
 from vnquant.data.sector_membership import apply_sector_mapping
+from vnquant.data.source_sync import SourceSyncOrchestrator
 
 
 def _load_panel(wh: Warehouse, sector_pit_path: str | None = None):
@@ -26,7 +27,14 @@ def _load_panel(wh: Warehouse, sector_pit_path: str | None = None):
     return mapped.panel, mapped.mode.value, mapped.warning
 
 
-def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = None) -> dict:
+def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = None,
+        sync_orchestrator: SourceSyncOrchestrator | None = None) -> dict:
+    sync=(sync_orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"})
+    if not sync.actionable:
+        return {"status":sync.failure_reason or sync.mode,"sync_mode":sync.mode,
+                "provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
+                "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
+                "candidate_count":0,"actionable":False}
     wh=Warehouse(data_dir); panel, sector_mode, sector_warning=_load_panel(wh,sector_pit_path)
     panel=add_cross_sectional_rs(panel,horizons=(20,126))
     breadth=compute_breadth(panel); ew=build_equal_weight_index(panel)
@@ -57,7 +65,9 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     market={"as_of":str(latest_date),"regime":rr.regime.name,"reason":rr.reason,
             "candidate_count":int(len(candidates)),"universe_mode":"CURRENT_UNIVERSE_PROXY",
             "sector_mode":sector_mode,"sector_warning":sector_warning,
-            "cap_index_mode":"EQUAL_WEIGHT_PROXY_UNTIL_OFFICIAL_INDEX_SERIES_INGESTED"}
+            "cap_index_mode":"EQUAL_WEIGHT_PROXY_UNTIL_OFFICIAL_INDEX_SERIES_INGESTED",
+            "sync_mode":sync.mode,"provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
+            "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,"actionable":True}
     (out/"market.json").write_text(json.dumps(market,ensure_ascii=False,indent=2),encoding="utf-8")
     return market
 
