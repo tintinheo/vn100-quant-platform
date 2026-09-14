@@ -34,6 +34,7 @@
 | **3.5.10** | **2026-09-14** | **Classified the archived v3.1 SSI adapter, doctor/bootstrap paths, and implementation report as historical/disabled, and added package, distribution, dependency, import, and test-discovery boundaries. Negative SSI-retirement tests remain mandatory.** |
 | **3.5.11** | **2026-09-14** | **Implemented the §28.7 offline acceptance suite with fake DNSE SDK responses, injected Vietstock contract data, local CafeF HTML, deterministic time/calendar inputs, concurrency checks, and temporary storage. Full maintained suite: 99 passed; no provider admission or live-data-validation claim.** |
 | **3.5.12** | **2026-09-14** | **Reconciled every implementation-status statement with tracked repository contents: the standalone `vn100_multisource_feed_v1` package is absent, while `src/vnquant/` is the maintained SSI-free implementation and its full suite passes 99 offline tests. No live-validation/admission claim.** |
+| **3.5.13** | **2026-09-14** | **Consolidated the retained v3.3/v3.5 BRD copies and duplicate ZIP bundles into this stable canonical file. Historical wording and withdrawn claims remain recoverable in Git; no business rule, provider status, or live-validation status changed.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

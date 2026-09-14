@@ -34,6 +34,7 @@
 | **3.5.10** | **2026-09-14** | **Phân loại SSI adapter, doctor/bootstrap và implementation report v3.1 trong archive là lịch sử/bị vô hiệu hóa; thêm ranh giới package, distribution, dependency, import và test discovery. Bắt buộc giữ negative SSI-retirement tests.** |
 | **3.5.11** | **2026-09-14** | **Đã implement bộ acceptance test offline §28.7 bằng DNSE SDK response giả, Vietstock contract data được inject, CafeF HTML cục bộ, clock/calendar deterministic, kiểm tra concurrency và temporary storage. Toàn bộ maintained suite: 99 passed; không claim provider admission hoặc live-data validation.** |
 | **3.5.12** | **2026-09-14** | **Đối chiếu toàn bộ statement về implementation với nội dung repository được track: package độc lập `vn100_multisource_feed_v1` không có, còn `src/vnquant/` là implementation SSI-free được duy trì và full suite pass 99 tests offline. Không claim live validation/admission.** |
+| **3.5.13** | **2026-09-14** | **Hợp nhất các bản BRD v3.3/v3.5 và ZIP bundle trùng lặp vào file canonical ổn định này. Nội dung lịch sử và các claim đã rút lại vẫn có thể truy xuất trong Git; không thay đổi business rule, trạng thái provider hoặc live validation.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 

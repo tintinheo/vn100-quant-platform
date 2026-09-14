@@ -13,3 +13,14 @@ with:
 python -m pip wheel . --no-deps --no-build-isolation -w dist
 python scripts/check_distribution.py dist/*.whl
 ```
+
+## Documentation
+
+Start with the [current baseline](docs/CURRENT_BASELINE.md), then read the
+[canonical English BRD](docs/BRD-VN100-Quant-Platform.md), its
+[Vietnamese companion](docs/BRD-VN100-Quant-Platform-VI.md), the
+[canonical SRD](docs/SRD-VN100-Quant-Platform.md), and the
+[provider research report](docs/PROVIDER-RESEARCH-REPORT.md). The complete
+current document index is in [`docs/DOCUMENTS.md`](docs/DOCUMENTS.md).
+Versioned copies and `LATEST` bundles are historical Git artifacts, not current
+specifications.
