@@ -24,7 +24,7 @@ import pandas as pd
 from .base import DataMode
 from .models import CanonicalBar, RawSnapshot
 from .provider_registry import ProviderRegistry, default_provider_registry
-from .quality import validate_bars
+from .quality import DataQualityService, validate_bars
 from .storage import Warehouse
 
 
@@ -78,6 +78,7 @@ class SyncReport:
     requested_range: str | None
     canonical_rows_written: int
     dq_status: str
+    dq_score: int
     last_accepted_market_date: str | None
     last_successful_sync: str | None
     data_age_days: int | None
@@ -101,6 +102,7 @@ class SyncReport:
         value["required_capabilities"] = tuple(value["required_capabilities"])
         value["raw_snapshot_ids"] = tuple(value.get("raw_snapshot_ids", ()))
         value.setdefault("status", value.get("failure_reason") or "SYNC_FAILED")
+        value.setdefault("dq_score", 100 if value.get("dq_status") == "PASS" else 0)
         value.setdefault("cache_accepted", False)
         value.setdefault("degraded_mode", value.get("mode") in {"STALE", "DEGRADED_CACHED_DATA"})
         value.setdefault("providers", {})
@@ -193,6 +195,7 @@ class SourceSyncOrchestrator:
 
     def _persist(self, report: SyncReport) -> SyncReport:
         self._write_json(self.report_path, asdict(report))
+        Warehouse(self.data_dir).persist_sync_report(report)
         return report
 
     def _accepted_cache(self, report: SyncReport | None) -> bool:
@@ -250,7 +253,7 @@ class SourceSyncOrchestrator:
             return self._failure_report(started, previous, accepted, expected, providers,
                                         resolution_failure, key, fetched=False)
 
-        ranges, snapshots, changes, dq = {}, [], {}, {}
+        ranges, snapshots, changes, dq, dq_scores = {}, [], {}, {}, []
         provider_objects = {}
         fetched = False
         try:
@@ -289,6 +292,13 @@ class SourceSyncOrchestrator:
                             raise RuntimeError(f"DQ failed for {symbol}")
                         worst = "WARN" if issues else worst
                         canonical = [self._canonical(row, raw, snapshot) for _, row in frame.iterrows()]
+                        evaluation = DataQualityService().evaluate(canonical,
+                            expected_latest_session=expected, admitted_providers={provider_id})
+                        Warehouse(self.data_dir).persist_dq_evaluation(evaluation)
+                        dq_scores.append(evaluation.score)
+                        if not evaluation.actionable:
+                            codes = ", ".join(result.code for result in evaluation.results)
+                            raise RuntimeError(f"DQ failed for {symbol}: {codes}")
                         canonical_path = self.data_dir / "parquet" / "canonical_bars.parquet"
                         if canonical_path.exists():
                             existing = pd.read_parquet(canonical_path)
@@ -311,6 +321,7 @@ class SourceSyncOrchestrator:
                 requested_range=ranges.get("daily_ohlcv"), requested_ranges=ranges,
                 raw_snapshot_ids=tuple(snapshots), canonical_rows_written=sum(changes.values()),
                 canonical_changes=changes, dq_status="WARN" if "WARN" in dq.values() else "PASS",
+                dq_score=min(dq_scores, default=100),
                 dq_result=dq, last_accepted_market_date=expected.isoformat(), last_successful_sync=now,
                 failure_reason=None, mode=SyncMode.LIVE.value if fetched else SyncMode.CACHE_ONLY.value,
                 actionable=True, status=SyncStatus.READY.value, cache_accepted=True,
@@ -384,6 +395,6 @@ class SourceSyncOrchestrator:
             providers=providers, fresh_before=False, remote_fetch_performed=fetched,
             requested_range=(ranges or {}).get("daily_ohlcv"), requested_ranges=ranges or {},
             raw_snapshot_ids=tuple(snapshots or ()), canonical_rows_written=0, canonical_changes={},
-            dq_status=dq_status, dq_result={}, last_accepted_market_date=market_date,
+            dq_status=dq_status, dq_score=(previous.dq_score if accepted else 0), dq_result={}, last_accepted_market_date=market_date,
             last_successful_sync=last_sync, failure_reason=reason, mode=mode, actionable=False,
             status=status, cache_accepted=accepted, degraded_mode=accepted, freshness_key=key))

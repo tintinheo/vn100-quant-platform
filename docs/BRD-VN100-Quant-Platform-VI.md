@@ -30,6 +30,7 @@
 | **3.5.6** | **2026-09-14** | **Bắt buộc app và pipeline dùng synchronization result; publish/hiển thị `NO_ADMITTED_PROVIDER` khi không có provider admitted và cache được policy chấp nhận; công khai cache/degraded lineage và loại bỏ actionable artifact cũ. Chỉ offline-tested.** |
 | **3.5.7** | **2026-09-14** | **Hoàn tất freshness theo capability, watermark theo provider/capability, deterministic rerun key, synchronization lock, incremental/recheck fetch, raw snapshot lineage và force refresh rõ ràng. Calendar chỉ loại cuối tuần và recheck defaults vẫn là `[GUESS]`; provider admission không đổi.** |
 | **3.5.8** | **2026-09-14** | **Bắt buộc provider fetch trả raw payload bất biến cùng request metadata trước normalization; bootstrap và sync lưu evidence trước canonical bars, và CSV được ủy quyền hash mọi file giá/universe. Chỉ offline-tested; provider admission không đổi.** |
+| **3.5.9** | **2026-09-14** | **Hợp nhất đánh giá DQ canonical, lưu lịch sử DQ/sync gắn canonical revision, và thực thi confidence/actionability gate hiện có tại §17. Chỉ offline-tested; provider admission và real-data status không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 

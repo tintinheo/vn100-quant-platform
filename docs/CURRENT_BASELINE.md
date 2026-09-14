@@ -21,6 +21,7 @@
 - Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
 - Provider governance: structured evidence and the enforced `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED` lifecycle now replace the prior boolean access flag; no provider advanced from its prior state.
 - Runtime integration: application startup and the actionable analytics pipeline now consume a persisted governed sync result; absent an admitted provider or accepted cache, candidate generation fails closed with `NO_ADMITTED_PROVIDER`.
+- Data quality: one canonical service now evaluates ingestion/storage observations, persists revision-linked results and synchronization history, and applies the BRD's `[D]` confidence cap (70) and actionable block threshold (50).
 - Real-data validation: **NOT YET PERFORMED**.
 
 ## Mandatory governance
@@ -52,3 +53,4 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (sync-result enforcement)** | **2026-09-14** | **Made the governed synchronization result mandatory for startup/direct pipeline execution, with explicit `NO_ADMITTED_PROVIDER`, cache/degraded metadata, and stale actionable-artifact suppression. No live-validation or provider-admission change.** |
 | **3.5 (sync orchestration completion)** | **2026-09-14** | **Added capability freshness policies, provider/capability watermarks, expected-session resolution, deterministic freshness keys, cross-rerun locking, incremental raw snapshots/canonical merges, force refresh, and persisted per-capability results. Offline tested only; no live-validation or provider-admission change.** |
 | **3.5 (raw-evidence contract)** | **2026-09-14** | **Provider/file fetches now retain raw payload and request context before normalization, and canonical writes require persisted raw evidence. Offline tested only; no live-validation or provider-admission change.** |
+| **3.5 (canonical DQ service)** | **2026-09-14** | **Unified DQ checks and revision/sync-report persistence and enforced confidence/actionability gates. Offline tested only; no live-validation or provider-admission change.** |

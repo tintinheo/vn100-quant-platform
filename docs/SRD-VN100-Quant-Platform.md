@@ -30,6 +30,7 @@
 | **3.5.6** | **2026-09-14** | **Required the persisted synchronization result at both runtime entry points, added explicit cache-acceptance/degraded fields, and made blocked pipeline publication invalidate stale candidate/sector artifacts. Offline tested only.** |
 | **3.5.7** | **2026-09-14** | **Implemented the complete application sync-service mechanics: capability/provider resolution, independent persisted watermarks and policies, expected-session calculation, deterministic freshness keys, cross-rerun locking, incremental/recheck fetch, immutable raw snapshots, idempotent canonical merges, force refresh, and persisted per-capability results. Offline tested only.** |
 | **3.5.8** | **2026-09-14** | **Implemented raw-first provider fetch results, evidence-before-normalization/canonical-write ordering, full canonical lineage fields, and exact-byte hashing/snapshotting for authorized price and universe files. Offline tested only.** |
+| **3.5.9** | **2026-09-14** | **Made `DataQualityService` the canonical DQ implementation; added date/session/staleness/band/status/unit/semantics/lineage/admission/disagreement/corporate-action checks, append-only revision-linked DQ and sync reports, and pipeline/recommendation DQ gates. Offline tested only.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2041,6 +2042,15 @@ test_raw_payload_persisted_before_canonical_commit
 ```
 
 ## 26.9. Implementation status
+
+Canonical validation is owned by `src/vnquant/data/quality.py`; `schema.py` retains
+only schema contracts and a compatibility facade. DQ evaluations carry an immutable
+canonical revision identifier and are append-persisted alongside synchronization
+reports. The recommendation engine caps confidence to the DQ score below 70 and
+marks output non-actionable below 50, using the existing BRD `[D]` thresholds.
+Stale data, unresolved corporate actions, missing lineage/admission, ambiguous units
+or adjustment semantics, blocked trading status, invalid/missing sessions, and
+venue-band breaches fail closed; disagreement remains visible and is never averaged.
 
 `IMPLEMENTED / OFFLINE_TESTED` as of 2026-09-14 for the application sync-service contract. Provider, cache, DQ, and source-sync capabilities are maintained under `src/vnquant/` and tested from `src/tests/`. The default weekday-only expected-session calendar and revision recheck intervals are configurable `[GUESS]` values pending authoritative calendar and admitted-provider revision evidence. Live Source Admission and real-data validation remain pending, so the default runtime still fails closed.
 
