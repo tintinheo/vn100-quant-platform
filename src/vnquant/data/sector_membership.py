@@ -20,7 +20,7 @@ def apply_sector_mapping(panel: pd.DataFrame, *, pit_path: str | Path | None = N
     d=panel.copy()
     if pit_path is not None and Path(pit_path).exists():
         m=pd.read_csv(pit_path)
-        req={"symbol","sector","effective_from","effective_to"}
+        req={"symbol","sector_code","sector_name","taxonomy_version","effective_from","effective_to","source","source_snapshot_id"}
         missing=req-set(m.columns)
         if missing: raise ValueError(f"Sector PIT file missing columns: {sorted(missing)}")
         m["symbol"]=m.symbol.astype(str).str.upper()
@@ -28,10 +28,14 @@ def apply_sector_mapping(panel: pd.DataFrame, *, pit_path: str | Path | None = N
         m["effective_to"]=pd.to_datetime(m.effective_to,errors="coerce")
         d["_td"]=pd.to_datetime(d.trading_date)
         d["sector"]="UNKNOWN"
+        d["sector_code"]="UNKNOWN"
+        d["sector_taxonomy_version"]="UNKNOWN"
+        d["sector_source_snapshot_id"]="UNKNOWN"
         # Deterministic and auditable; VN100 scale makes this acceptable.
         for row in m.itertuples(index=False):
             mask=(d.symbol.astype(str).str.upper()==row.symbol)&(d._td>=row.effective_from)&(pd.isna(row.effective_to)|(d._td<=row.effective_to))
-            d.loc[mask,"sector"]=row.sector
+            d.loc[mask,["sector","sector_code","sector_taxonomy_version","sector_source_snapshot_id"]]=[
+                row.sector_name,row.sector_code,row.taxonomy_version,row.source_snapshot_id]
         d=d.drop(columns="_td")
         return SectorMappingResult(d,SectorMode.STRICT_PIT,None)
     if current_master is not None and not current_master.empty:

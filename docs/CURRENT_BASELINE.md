@@ -63,6 +63,8 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (parameter governance)** | **2026-09-14** | **Audited runtime constants/defaults and introduced a packaged versioned parameter registry with enforced classifications and literal `[GUESS]` calibration/verification requirements. Full suite: 101 passed offline; no provider/admission/live-validation change.** |
 | **3.5 (sync-check routing clarification)** | **2026-09-14** | **Codified that app runs check synchronization state rather than calling all providers: admitted DNSE is preferred per capability, fresh state avoids I/O, Vietstock remains contract/admission-gated, and CafeF remains explicit sampled validation only. No provider/admission/live-validation change.** |
 
+| **3.5 (PIT reference-data governance)** | **2026-09-14** | **Added official-review snapshot ingestion, effective-dated sector taxonomy, and strict historical-backtest/capital-qualification gates. Offline tested only; no live-validation/admission change.** |
+
 ## Historical-artifact isolation (2026-09-14)
 
 The v3.1 archive, its embedded SSI adapter and SSI-specific doctor/bootstrap,
@@ -73,3 +75,7 @@ dependencies exclude legacy/SSI inputs, pytest discovery is restricted to
 `src/tests`, and checkout imports of `legacy` fail closed. Negative SSI
 retirement tests remain required. Provider admission and real-data status are
 unchanged.
+
+## Effective-dated reference-data update (2026-09-14)
+
+The maintained package now ingests controlled official VN100 review transcriptions only after storing immutable source evidence, persists snapshot identifiers on effective-dated membership, maintains an effective-dated/versioned sector taxonomy with source lineage, and enforces `STRICT_PIT` for the “historical VN100 backtest” label. Exploratory current-universe/current-sector proxy runs remain warned and cannot qualify strategies for real capital. Status remains **OFFLINE_TESTED**; official live evidence has not been supplied or validated and provider admission is unchanged.
