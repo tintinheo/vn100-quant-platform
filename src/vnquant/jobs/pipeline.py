@@ -13,6 +13,7 @@ from vnquant.data.sector_membership import apply_sector_mapping
 from vnquant.data.source_sync import SourceSyncOrchestrator
 from vnquant.data.quality import apply_dq_policy
 from vnquant.config import parameter_value
+from vnquant.portfolio import PortfolioContext, PortfolioRiskService
 
 
 def _official_cap_index(wh: Warehouse, latest_date) -> tuple[pd.Series, str, str | None]:
@@ -54,7 +55,7 @@ def _publish_blocked_result(sync, publish_dir: str) -> dict:
             "degraded_mode":sync.degraded_mode,"cache_accepted":sync.cache_accepted,
             "candidate_count":0,"actionable":False}
     out=Path(publish_dir); out.mkdir(parents=True,exist_ok=True)
-    for name in ("candidates.csv", "sector_scores.csv"):
+    for name in ("candidates.csv", "sector_scores.csv", "portfolio_risk_decisions.csv"):
         (out/name).unlink(missing_ok=True)
     (out/"market.json").write_text(
         json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
@@ -76,7 +77,8 @@ def _load_panel(wh: Warehouse, sector_pit_path: str | None = None):
 
 
 def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = None,
-        sync_orchestrator: SourceSyncOrchestrator | None = None) -> dict:
+        sync_orchestrator: SourceSyncOrchestrator | None = None,
+        portfolio_context: PortfolioContext | None = None) -> dict:
     sync=(sync_orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"})
     if not sync.actionable:
         return _publish_blocked_result(sync,publish_dir)
@@ -102,6 +104,20 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     if not dq_actionable:
         candidates=candidates.iloc[0:0]
 
+    # Risk approval is deliberately after recommendation construction and before
+    # either warehouse/publication output. Missing account state fails closed.
+    context = portfolio_context or PortfolioContext(0.0, 0.0, 0.0)
+    decisions = PortfolioRiskService().evaluate(candidates, context, rr.regime.name)
+    if not decisions.empty:
+        wh.persist_portfolio_risk_decisions(decisions)
+        approved = decisions[decisions.status.isin(["ACCEPTED", "RESIZED"])]
+        candidates = candidates.merge(
+            approved[["decision_id", "symbol", "status", "quantity", "estimated_loss",
+                      "notional", "binding_constraint", "configuration_version"]],
+            on="symbol", how="inner")
+    else:
+        candidates = candidates.iloc[0:0]
+
     wh.write_table(sectors,"sector_scores")
     wh.write_table(candidates,"candidates")
     wh.write_table(pd.DataFrame([{
@@ -114,6 +130,7 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     out=Path(publish_dir); out.mkdir(parents=True,exist_ok=True)
     sectors.to_csv(out/"sector_scores.csv",index=False)
     candidates.to_csv(out/"candidates.csv",index=False)
+    decisions.to_csv(out/"portfolio_risk_decisions.csv", index=False)
     market={"as_of":str(latest_date),"regime":rr.regime.name,"reason":rr.reason,
             "candidate_count":int(len(candidates)),"universe_mode":"CURRENT_UNIVERSE_PROXY",
             "sector_mode":sector_mode,"sector_warning":sector_warning,

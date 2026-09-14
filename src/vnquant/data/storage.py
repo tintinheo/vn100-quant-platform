@@ -122,6 +122,15 @@ class Warehouse:
                 record[key] = json.dumps(value, sort_keys=True)
         self._append_table(pd.DataFrame([record]), "sync_reports")
 
+    def persist_portfolio_risk_decisions(self, decisions: pd.DataFrame) -> Path | None:
+        """Append the complete accepted/resized/rejected pre-publication audit."""
+        if decisions.empty:
+            return None
+        required = {"decision_id", "status", "binding_constraint", "configuration_version"}
+        if not required.issubset(decisions.columns):
+            raise ValueError(f"risk decisions missing columns: {sorted(required - set(decisions.columns))}")
+        return self._append_table(decisions, "portfolio_risk_decisions")
+
     def write_records(self, name: str, records: list[object]) -> Path:
         """Persist one of the canonical metadata/event tables with stable columns."""
         if not records or any(not is_dataclass(record) for record in records):
@@ -177,7 +186,7 @@ class Warehouse:
         glob=str((self.parquet/"bars"/"*.parquet").as_posix())
         if list((self.parquet/"bars").glob("*.parquet")):
             con.execute(f"CREATE OR REPLACE VIEW bars AS SELECT * FROM read_parquet('{glob}', union_by_name=true)")
-        for table in ("security_master","universe_current","index_bars","market_regimes","sector_scores","candidates"):
+        for table in ("security_master","universe_current","index_bars","market_regimes","sector_scores","candidates","portfolio_risk_decisions"):
             p=self.parquet/f"{table}.parquet"
             if p.exists():
                 con.execute(f"CREATE OR REPLACE VIEW {table} AS SELECT * FROM read_parquet('{p.as_posix()}')")

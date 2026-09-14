@@ -1,5 +1,5 @@
 schema_version: 1
-config_version: "quant-parameters-v1-2026-09-14"
+config_version: "quant-parameters-v1-2026-09-14.1"
 parameters:
   dq.confidence_cap:
     value: 70
@@ -233,3 +233,60 @@ parameters:
     value: 8
     classification: "[D] [GUESS]"
     requirement: "[GUESS] Verify sufficient diagnostic evidence; display count has no admission significance."
+  portfolio.lot_size:
+    value: 100
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify exchange/board-specific lot rules from effective-dated market configuration before real use."
+  portfolio.risk_per_trade:
+    value: 0.01
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate maximum per-trade risk with owner risk tolerance and walk-forward stress tests."
+  portfolio.minimum_stop_fraction:
+    value: 0.01
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate minimum meaningful stop distance by volatility and execution costs."
+  portfolio.maximum_stop_fraction:
+    value: 0.20
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate maximum tolerable stop distance by archetype and gap stress."
+  portfolio.minimum_notional:
+    value: 10000000
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §11.5 default; verify against actual fee schedules and account scale."
+  portfolio.maximum_concurrent_positions:
+    value: 10
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §16 default; validate against monitoring capacity and portfolio outcomes."
+  portfolio.maximum_correlated_positions:
+    value: 2
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §16 default; validate correlated-group definitions and stress behavior."
+  portfolio.maximum_security_exposure:
+    value: 0.10
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate inside the BRD §16 archetype range before real use."
+  portfolio.maximum_sector_exposure:
+    value: 0.35
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §16 default; validate with PIT sector classifications and stress tests."
+  portfolio.maximum_correlated_exposure:
+    value: 0.15
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate correlated economic-bet exposure using PIT correlations/group taxonomy."
+  portfolio.maximum_adv_participation:
+    value: 0.03
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §11.5 default; validate against admitted volume units and measured fills."
+  portfolio.maximum_total_open_risk:
+    value: 0.05
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §16 default; validate with gap, floor-lock and portfolio stress tests."
+  portfolio.regime_limits:
+    value:
+      STRONG_BULL: {total_exposure: 1.0, risk_multiplier: 1.0}
+      CONCENTRATED_BULL: {total_exposure: 0.8, risk_multiplier: 0.8}
+      RANGE: {total_exposure: 0.6, risk_multiplier: 0.6}
+      RISK_OFF: {total_exposure: 0.4, risk_multiplier: 0.4}
+      PANIC_BEAR: {total_exposure: 0.0, risk_multiplier: 0.0}
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime-specific exposure and risk multipliers using expanding-window stress tests."
