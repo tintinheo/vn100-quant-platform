@@ -33,6 +33,7 @@
 | **3.5.9** | **2026-09-14** | **Unified canonical DQ evaluation, persisted revision-linked DQ/sync history, and enforced the existing §17 confidence/actionability gates. Offline tested only; provider admission and real-data status are unchanged.** |
 | **3.5.10** | **2026-09-14** | **Classified the archived v3.1 SSI adapter, doctor/bootstrap paths, and implementation report as historical/disabled, and added package, distribution, dependency, import, and test-discovery boundaries. Negative SSI-retirement tests remain mandatory.** |
 | **3.5.11** | **2026-09-14** | **Implemented the §28.7 offline acceptance suite with fake DNSE SDK responses, injected Vietstock contract data, local CafeF HTML, deterministic time/calendar inputs, concurrency checks, and temporary storage. Full maintained suite: 99 passed; no provider admission or live-data-validation claim.** |
+| **3.5.12** | **2026-09-14** | **Reconciled every implementation-status statement with tracked repository contents: the standalone `vn100_multisource_feed_v1` package is absent, while `src/vnquant/` is the maintained SSI-free implementation and its full suite passes 99 offline tests. No live-validation/admission claim.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1565,7 +1566,7 @@ following hold simultaneously.
 | **Vietstock offers a professional DataFeed product through API or Sync Data** | Retain Vietstock DataFeed as the leading **licensed secondary/alternative feed candidate**, subject to contract/access/schema/rights validation | It may become primary/secondary after Source Admission; no scraping assumption and no claim that access is currently available |
 | **CafeF exposes historical data pages and Excel export, with a reference-use disclaimer; no equivalent official public API documentation was verified in this research** | Treat CafeF as **manual/spot-validation or research evidence only** by default | Undocumented endpoints are not a production dependency; automation requires explicit rights/terms verification |
 | **Public visibility ≠ automation/redistribution permission** | Add source-rights gate to Data Quality / Definition of Done | Prevent technically successful but contractually unsafe ingestion |
-| **SRD v3.1 says 58 tests currently passing, but latest delivered source package runs 18/18** | Correct current implementation claim to 18/18; legacy/planned test inventory remains a target, not a passed-build claim | Documentation reflects executable evidence |
+| **Historical v3.1 documents disagreed between 58 and 18 tests** | Retain 18/18 only as historical evidence for the quarantined legacy archive; current maintained evidence is 99 offline tests under `src/tests/` | Historical evidence is not presented as current implementation or live-data validation |
 | **Historical VN100 membership must not depend on a broker API** | Use HOSE official review/rule evidence and effective-dated snapshots as the target source of truth; manual import is acceptable until an admitted machine feed exists | `CURRENT_UNIVERSE_PROXY` remains explicit until PIT archive is supplied; no SSI dependency |
 | **Compliance text said risk 'vanishes entirely' for personal/self-hosted use** | Remove categorical claim; personal use does not waive data/licensing or all legal obligations | More defensible product boundary |
 | **Research/assessment changes could live outside core docs** | New mandatory BRD/SRD synchronization policy (§26) | No orphan architecture decisions |
@@ -1595,7 +1596,7 @@ following hold simultaneously.
 The active source contract is now:
 
 1. **T0 official evidence** — HOSE / HNX / VSDC / SSC / issuer disclosures for the fields they govern.
-2. **DNSE OpenAPI** — leading documented automated market-data candidate `[GUESS]`; standalone read-only adapter is implemented/offline-tested, but production use remains BLOCKED until live Source Admission passes.
+2. **DNSE OpenAPI** — leading documented automated market-data candidate `[GUESS]`; integrated read-only adapter is implemented/offline-tested under `src/vnquant/`, but production use remains BLOCKED until live Source Admission passes.
 3. **Vietstock DataFeed** — leading licensed secondary/alternative automated-feed candidate after access, contract, schema, rights, revision behaviour and sample reconciliation pass Source Admission.
 4. **CafeF historical pages / authorized exports** — T2 reference validation by default; the implemented HTML adapter is explicit opt-in and is not a production primary source.
 5. **No provider is production-ADMITTED yet.** Until DNSE or another provider passes live Source Admission, actionable live auto-refresh remains **BLOCKED**; the new module is offline-tested only. `[GUESS]`
@@ -1720,7 +1721,7 @@ BRD and SRD **must share the same major/minor project baseline** after a materia
 
 ## 26.4. Current synchronization state
 
-As of **2026-09-10**, BRD and SRD are synchronized at **v3.3 SSI-Free Multi-Source Baseline**. The delivered executable source is still the **legacy v3.1 Phase-1 / GPTCode-style implementation** and contains SSI-specific code; that code path is **DISABLED BY PRODUCT POLICY** and is not compliant with v3.3 for real-data ingestion. Its historical 18/18 test result is retained only as legacy implementation evidence. A v3.3 executable build is not yet implemented or real-data validated.
+As of **2026-09-14**, the canonical documents are synchronized at the **3.5 SSI-Free DNSE-First Auto-Sync baseline**. The maintained executable implementation is the tracked `src/vnquant/` package with tests under `src/tests/`; the quarantined v3.1 SSI archive is historical evidence only. The separately documented `vn100_multisource_feed_v1` package is absent from this checkout and Git history. The maintained suite passes 99 offline tests; no provider is admitted or live-data validated.
 
 
 # 27. v3.3 SSI-FREE PROVIDER DECISION
@@ -1739,7 +1740,7 @@ The product owner cannot register for SSI FastConnect and has instructed the pro
 
 ## 27.3. Implementation delta required
 
-The next executable revision must, at minimum, remove SSI from runtime dependencies/configuration, remove SSI-specific first-run instructions, make the provider registry generic, support an explicit `NO_ADMITTED_PROVIDER` state, and ensure the pipeline cannot silently fall back to scraped or synthetic data in real-data mode. `[GUESS]`
+The maintained `src/vnquant/` revision now removes SSI from active runtime dependencies/configuration, uses a generic evidence-gated provider registry, exposes `NO_ADMITTED_PROVIDER`, and fails closed rather than silently selecting scraped or synthetic data. Remaining work is live provider admission, authorized contract verification, and real-data validation; the absent standalone package is not an implementation dependency.
 
 
 
@@ -1904,7 +1905,7 @@ Vietstock DataFeed remains a strong licensed feed candidate, especially for broa
 
 A repository audit on 2026-09-14 found no package, tests, packaging files, or examples for `vn100_multisource_feed_v1` in the working tree, Git history, or committed archives. The standalone artifact was therefore **never committed to this repository**, and its former `10/10 PASS` claim is withdrawn as unreproducible.
 
-The maintained implementation is instead integrated under `src/vnquant/`, with tests under `src/tests/`. DNSE/Vietstock/CafeF providers and source-sync logic exist there; the full integrated suite run from `src/` passed 60 offline tests on 2026-09-14. The list below describes the intended contract of the missing artifact, not a delivered standalone package:
+The maintained implementation is instead integrated under `src/vnquant/`, with tests under `src/tests/`. DNSE/Vietstock/CafeF providers and source-sync logic exist there; the full integrated suite run from `src/` passed 99 offline tests on 2026-09-14. The list below describes the intended contract of the missing artifact, not a delivered standalone package:
 
 Intended components:
 

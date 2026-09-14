@@ -7,7 +7,7 @@
 | File | `SRD-VN100-Quant-Platform.md` |
 | Current internal version | **3.5 — SSI-FREE DNSE-FIRST AUTO-SYNC — 2026-09-13** |
 | Companion | `BRD-VN100-Quant-Platform.md` — read that first |
-| Basis | Current BRD + source-governance research + implemented/offline-tested multi-source feed module |
+| Basis | Current BRD + source-governance research + tracked `src/vnquant/` implementation (offline-tested); absent standalone package recorded explicitly |
 | Reality check | **The main app and actionable pipeline now invoke a persisted source-sync gate. Providers remain offline-tested only; none is production-admitted or live-data validated.** |
 
 ## Document Control & Change Log
@@ -33,6 +33,7 @@
 | **3.5.9** | **2026-09-14** | **Made `DataQualityService` the canonical DQ implementation; added date/session/staleness/band/status/unit/semantics/lineage/admission/disagreement/corporate-action checks, append-only revision-linked DQ and sync reports, and pipeline/recommendation DQ gates. Offline tested only.** |
 | **3.5.10** | **2026-09-14** | **Quarantined the historical v3.1 SSI archive/report behind package, built-distribution, dependency, import, and pytest-discovery checks while retaining negative SSI retirement coverage.** |
 | **3.5.11** | **2026-09-14** | **Implemented the §§25.2/26.8 offline acceptance harness with deterministic injectable clocks, fake DNSE SDK calls, an injected Vietstock contract fixture, local CafeF HTML, temporary warehouses, raw-order/lineage assertions, idempotence, and concurrent-rerun coverage. Full suite: 99 passed; admission/live-validation status is unchanged.** |
+| **3.5.12** | **2026-09-14** | **Audited every implementation-status statement against tracked contents and reconciled §§23.1, 24.4, 25.3, 26.9, and 27.2: `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` functionality is implemented/offline-tested. Full suite: 99 passed; no admission/live-validation claim.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -686,7 +687,7 @@ After a provider passes Source Admission, the target command is provider-agnosti
 python -m vnquant.jobs.source_doctor --provider <admitted_provider>
 ```
 
-This command is **SPECIFIED/TARGET, NOT YET IMPLEMENTED**. Checks include access/auth where applicable, sample coverage, OHLC invariants, duplicates/non-positive prices, units/timezone/date semantics, revision metadata and a Data Quality verdict. Passing the doctor proves connectivity/schema plausibility, **not** full historical correctness.
+The proposed `vnquant.jobs.source_doctor` module name is absent. The maintained provider-neutral preflight is **IMPLEMENTED / TESTED_OFFLINE** as `python -m vnquant.jobs.doctor --provider <admitted_provider>`; it selects only an admitted real-data provider and checks membership, sample OHLC and canonical quality. It cannot run a live provider check until admission and credentials/evidence exist. Passing it would prove only connectivity/schema plausibility, **not** full historical correctness or real-data validation.
 
 For manual/authorized CSV/Excel auxiliary imports, the importer must validate the same canonical invariants and persist the file hash and provenance. This path is fallback/debug/recovery/bootstrap only, not the normal startup workflow. `[GUESS]`
 
@@ -696,11 +697,13 @@ A current VN100 snapshot may be imported for current scanning. Any retrospective
 
 ## 6A.5. Provider/adaptor status
 
-| Adapter/source | Status 2026-09-10 | Canonical writes allowed? |
+| Adapter/source | Status verified against checkout 2026-09-14 | Canonical writes allowed? |
 |---|---|---|
 | Official HOSE/HNX/VSDC/SSC/issuer evidence | **T0 authority; ingestion may be manual/structured by field** | Yes for fields whose provenance/effective date is captured |
-| `VietstockDataFeedProvider` | **SPECIFIED / VALIDATION CANDIDATE** | No until authorized access, schema, rights and reconciliation evidence pass Source Admission |
-| `CafeFManualValidationProvider` `[GUESS]` | **SPECIFIED ONLY** | Only controlled/manual validation/import where data-use basis is acceptable; not an automated production feed by default |
+| `DNSEProvider` | **IMPLEMENTED / TESTED_OFFLINE / CANDIDATE `[GUESS]` / NOT ADMITTED** | Only after Source Admission; raw evidence must precede canonical writes |
+| `VietstockDataFeedProvider` | **IMPLEMENTED generic contract gate / TESTED_OFFLINE / NOT ADMITTED** | No until authorized access, schema, rights and reconciliation evidence pass Source Admission |
+| `CafeFReferenceProvider` | **IMPLEMENTED / TESTED_OFFLINE / RESEARCH_ONLY; ineligible for admission** | Reference comparison only when explicitly enabled; not an automated production feed |
+| Controlled CSV provider/import | **IMPLEMENTED / TESTED_OFFLINE** | Yes only with source metadata, exact-byte hash/raw evidence and applicable DQ gates |
 | Undocumented CafeF/Vietstock HTTP endpoints | **NOT ADMITTED** | No |
 | Legacy `SSIFastConnectV3Provider` | **RETIRED / DISABLED by product-owner decision** | **No** |
 
@@ -1536,11 +1539,11 @@ cross-sectional variance, and drift flags.
 
 # 19. TESTING
 
-**Legacy delivered Phase-1 implementation evidence: 18/18 tests passed via `python -m pytest -q`.** The earlier consolidated SRD carried a broader 58-test specification inventory; v3.3 does not present that inventory as a passed-build claim. Tests not present in the current repository are **PLANNED/TARGET**, not evidence of implementation.
+**Current maintained implementation evidence: 99 offline tests passed via `cd src && python -m pytest -q` on 2026-09-14.** Historical 18/18 and 58-test statements apply only to earlier/quarantined artifacts or target inventories, not the current build. Tests not present under tracked `src/tests/` remain **PLANNED/TARGET**.
 
 The legacy 18-test build covers strict/proxy universe handling, sector-proxy labelling, three-way relative strength, regime turnover invariants, recommendation suppression in Panic/Bear, candidate generation, execution audit/non-fill retention, market-rule/cost/corporate-action safeguards and related Phase-1 functions. These tests do not validate the v3.3 provider path.
 
-## 19.1. Target coverage inventory (includes tests not yet present in the current 18-test build)
+## 19.1. Target coverage inventory (includes targets not asserted by the current 99-test suite)
 
 | Area | Notable assertions |
 |---|---|
@@ -1578,9 +1581,9 @@ The legacy 18-test build covers strict/proxy universe handling, sector-proxy lab
    amounts and capital keys.
 
 
-## 19.3. Current build evidence — 18 tests
+## 19.3. Current maintained build evidence — 99 tests
 
-The latest implementation report records expansion from 9 to **18** tests. Current named areas include:
+The tracked maintained suite contains 99 collected offline tests. Covered areas include:
 
 - strict PIT universe refuses silent current-universe fallback;
 - effective-dated universe resolution;
@@ -1592,11 +1595,11 @@ The latest implementation report records expansion from 9 to **18** tests. Curre
 - pullback strategy family can fire;
 - gap-rejected signals remain in the execution audit.
 
-Build evidence from the latest delivered source:
+Build evidence from the maintained tracked source:
 
 ```text
 python -m compileall -q vnquant app.py    PASS
-python -m pytest -q                       18 passed
+python -m pytest -q                       99 passed
 ```
 
 Parquet/DuckDB end-to-end execution did **not** run in the build sandbox because `pyarrow`/`duckdb` could not be installed there. That limitation remains explicit.
@@ -1611,8 +1614,7 @@ Parquet/DuckDB end-to-end execution did **not** run in the build sandbox because
 ```bash
 pip install -r requirements-local.txt
 
-# v3.3 target runtime — the generic commands below are SPECIFIED/TARGET only
-# until the SSI-free source migration is implemented.
+# Maintained SSI-free package; providers remain non-admitted by default.
 python -m pytest -q
 
 # [GUESS] after an automated provider passes Source Admission:
@@ -1729,7 +1731,7 @@ exists to replace.
 
 # 22. KNOWN LIMITATIONS
 
-**The delivered executable code is still the legacy v3.1 Phase-1 implementation even though the documents are now v3.3.** It contains SSI-specific code, but SSI is disabled by product-owner decision and must not be used for real-data ingestion. Therefore there is currently **no v3.3-compliant automated market-data adapter** and no provider-specific real-data validation claim.
+**The maintained executable code is the tracked `src/vnquant/` package.** It contains SSI-free provider adapters, governance and source-sync code. The v3.1 SSI archive under `legacy/` is quarantined historical evidence, not an active implementation. No provider-specific real-data validation claim is made.
 
 **True historical point-in-time VN100 membership is still not present in the delivered data store.** The target source of truth is effective-dated HOSE review/rule evidence or another independently verified PIT archive. Historical runs using a current/manual snapshot must stay labelled `CURRENT_UNIVERSE_PROXY`; do not substitute a liquidity reconstruction and call it true VN100 history.
 
@@ -1762,9 +1764,9 @@ unavailable, indefinitely.
 
 ## 23.1. Current code vs v3.3 specification
 
-The companion source package `vnquant_realdata_v3_1` remains the latest **delivered legacy implementation**. It includes an SSI adapter and historically passed **18/18 tests**, but this is no longer the active provider architecture. Under v3.3, the SSI path is disabled and that 18/18 result is retained only as evidence about the legacy codebase, not as proof that the v3.3 data path works.
+The maintained executable implementation is the tracked `src/vnquant/` package. Repository contents implement an SSI-free provider registry, explicit `NO_ADMITTED_PROVIDER`, read-only DNSE, contract-gated Vietstock and reference-only CafeF adapters, controlled file import, canonical lineage/DQ, and persisted source-sync gating. The tracked tests are under `src/tests/` and the full suite passes 99 tests offline.
 
-v3.3 requires an SSI-free provider registry, `NO_ADMITTED_PROVIDER` state, generic source doctor/bootstrap contracts, Vietstock DataFeed admission work, CafeF/manual-import validation boundaries, reconciliation lineage and mandatory BRD/SRD synchronization. These v3.3 runtime changes are **SPECIFIED, NOT IMPLEMENTED**.
+The v3.1 package and its historical 18/18 result survive only as quarantined evidence under `legacy/`; they are not the current executable implementation. The separately referenced `vn100_multisource_feed_v1` package, `vn100_feed/` tree, package-local tests, examples and packaging files are absent from the current checkout and reachable Git history. None of the offline evidence proves provider admission, live schema/units, connectivity, data accuracy, or real-data validation.
 
 ## 23.2. Verification sources (accessed 2026-09-10)
 
@@ -1837,7 +1839,7 @@ A feature may have several applicable statuses (e.g. `IMPLEMENTED + TESTED_OFFLI
 
 After any material research/assessment change, BRD and SRD share the same project version. Source code is allowed to lag; when it does, the SRD must name the latest executable code version and the missing implementation delta.
 
-**Current state — 2026-09-14:** BRD/SRD = **v3.5 SSI-Free DNSE-First Auto-Sync Baseline**. The formerly referenced standalone `vn100_multisource_feed_v1` artifact is absent from the working tree, Git history, and committed archives, so it is not a delivered executable subsystem. Maintained provider and source-sync code is integrated under `src/vnquant/`, with tests under `src/tests/`. Live provider validation remains pending; SSI stays DISABLED.
+**Current state — 2026-09-14:** BRD/SRD = **v3.5 SSI-Free DNSE-First Auto-Sync Baseline**. The formerly referenced standalone `vn100_multisource_feed_v1` artifact is absent from the working tree, Git history, and committed archives, so it is not a delivered executable subsystem. Maintained provider, registry, file-import, canonical storage/DQ and source-sync code is integrated under `src/vnquant/`, with tests under `src/tests/` (99 passed offline on 2026-09-14). Live provider validation remains pending; SSI stays DISABLED.
 
 
 # 25. SSI-FREE RUNTIME MIGRATION CONTRACT `[GUESS]`
@@ -1876,7 +1878,7 @@ test_manual_file_not_required_for_normal_startup
 
 ## 25.3. Status
 
-`SPECIFIED`. No v3.3-compliant executable build has yet been produced or real-data validated.
+`IMPLEMENTED / TESTED_OFFLINE` for the tracked SSI-free runtime requirements in §25.1 and acceptance coverage in §25.2, under `src/vnquant/` and `src/tests/`. The formerly referenced standalone `vn100_multisource_feed_v1` package is absent and is not required by the maintained integration. Provider admission, live connectivity/schema/unit verification and real-data validation remain incomplete; default real mode fails closed.
 
 
 
@@ -2059,7 +2061,7 @@ Stale data, unresolved corporate actions, missing lineage/admission, ambiguous u
 or adjustment semantics, blocked trading status, invalid/missing sessions, and
 venue-band breaches fail closed; disagreement remains visible and is never averaged.
 
-`IMPLEMENTED / OFFLINE_TESTED` as of 2026-09-14 for the application sync-service contract. Provider, cache, DQ, and source-sync capabilities are maintained under `src/vnquant/` and tested from `src/tests/`. The default weekday-only expected-session calendar and revision recheck intervals are configurable `[GUESS]` values pending authoritative calendar and admitted-provider revision evidence. Live Source Admission and real-data validation remain pending, so the default runtime still fails closed.
+`IMPLEMENTED / TESTED_OFFLINE` as of 2026-09-14 for the tracked application sync-service contract; the full maintained suite passes 99 tests. Provider, cache, DQ, and source-sync capabilities are maintained under `src/vnquant/` and tested from `src/tests/`. The default weekday-only expected-session calendar and revision recheck intervals are configurable `[GUESS]` values pending authoritative calendar and admitted-provider revision evidence. Live Source Admission and real-data validation remain pending, so the default runtime still fails closed.
 
 > ## DISCLAIMER
 >
@@ -2108,7 +2110,7 @@ For this EOD module, `resolution="1D"` is used as `[GUESS]` based on the documen
 
 ## 27.2. Missing standalone artifact and maintained path
 
-The previously documented `vn100_multisource_feed_v1/` tree was not found in the repository working tree, any reachable Git commit, or the committed ZIP archives during the 2026-09-14 audit. Its proposed `vn100_feed/`, standalone tests, packaging files, and examples are therefore **not delivered repository content**.
+The previously documented `vn100_multisource_feed_v1/` tree is **ABSENT FROM THE CURRENT CHECKOUT** and was not found in the repository working tree, any reachable Git commit, or the committed ZIP archives during the 2026-09-14 audit. Its proposed `vn100_feed/`, standalone tests, packaging files, and examples are therefore **not delivered repository content**.
 
 The maintained, unversioned implementation path is `src/vnquant/`, including:
 

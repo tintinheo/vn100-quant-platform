@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.5 — 2026-09-14**
+**Current internal revision:** **1.6 — 2026-09-14**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -17,6 +17,7 @@
 | **1.3** | **2026-09-14** | **Hardened the maintained adapters so Vietstock requires endpoint semantics and retention rights before I/O and CafeF cannot be promoted from reference-only status. DNSE assumptions and provider evidence/admission are unchanged.** |
 | **1.4** | **2026-09-14** | **Implemented evidence-backed admission records and legal lifecycle transitions. Provider research evidence/admission is unchanged.** |
 | **1.5** | **2026-09-14** | **Documented the v3.1 SSI adapter and doctor/bootstrap archive as historical/disabled and added repository isolation checks. Provider evidence and admission are unchanged.** |
+| **1.6** | **2026-09-14** | **Reconciled all canonical implementation-status statements with tracked repository contents: standalone `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` provider/sync implementation passes 99 offline tests. No provider evidence, admission, or live-validation change.** |
 
 ## 1. Kết luận
 
@@ -61,7 +62,7 @@
 
 Audit ngày 2026-09-14 không tìm thấy `vn100_multisource_feed_v1`, source tree `vn100_feed/`, standalone tests, packaging files hoặc examples trong working tree, Git history hay các archive đã commit. Artifact này chưa từng được commit vào repository; do đó các lệnh package-local và kết quả offline đã ghi trước đây không thể tái lập và bị rút lại.
 
-Implementation được duy trì nằm tại `src/vnquant/`, với integrated tests tại `src/tests/`. Audit đã chạy `cd src && python -m compileall -q vnquant` thành công và `cd src && python -m pytest -q` với kết quả 60 passed. Trạng thái này không chứng minh provider live connectivity, schema/units thực tế, Source Admission hoặc real-data validation.
+Implementation được duy trì nằm tại `src/vnquant/`, với integrated tests tại `src/tests/`. Audit đã chạy `cd src && python -m compileall -q vnquant` thành công và `cd src && python -m pytest -q` với kết quả 99 passed. Trạng thái này không chứng minh provider live connectivity, schema/units thực tế, Source Admission hoặc real-data validation.
 
 ## 4.1. Stable-package integration
 
