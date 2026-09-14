@@ -21,9 +21,10 @@
 | 3.2 | 2026-09-10 | Multi-source data governance, provider trust tiers, source-admission/reconciliation rules. |
 | 3.3 | 2026-09-10 | SSI FastConnect removed from active architecture; SSI-Free baseline. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run requirement: sync-if-stale, cache, fail-safe; CSV/XLSX demoted to fallback/debug. |
-| **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. No live-data validation claim.** |
+| **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, with an offline-test claim later withdrawn by the 2026-09-14 artifact audit. No live-data validation claim.** |
 | **3.5.1** | **2026-09-13** | **Integrated DNSE, contract-gated Vietstock, and disabled/reference-only CafeF under `src/vnquant/data/providers/`; default registry is non-admitted and admission is not derived from HTTP success.** |
 | **3.5.2** | **2026-09-13** | **Implemented persisted source-sync orchestration for startup and actionable pipeline execution, explicit stale/degraded cache metadata, and fail-closed candidate gating.** |
+| **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible offline result and made `src/vnquant/` the documented implementation path. No live-validation/admission change.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1815,7 +1816,7 @@ A feature may have several applicable statuses (e.g. `IMPLEMENTED + TESTED_OFFLI
 
 After any material research/assessment change, BRD and SRD share the same project version. Source code is allowed to lag; when it does, the SRD must name the latest executable code version and the missing implementation delta.
 
-**Current state — 2026-09-13:** BRD/SRD = **v3.5 SSI-Free DNSE-First Auto-Sync Baseline**. Main app executable remains legacy v3.1 and SSI-specific, but a new standalone `vn100_multisource_feed_v1` subsystem is **IMPLEMENTED + TESTED_OFFLINE (10/10)**. It contains DNSE read-only market-data adapter, SQLite incremental cache, VN100 scanner, CafeF opt-in reference adapter, and contract-gated Vietstock DataFeed adapter. Main-app integration and live provider validation remain pending; SSI stays DISABLED.
+**Current state — 2026-09-14:** BRD/SRD = **v3.5 SSI-Free DNSE-First Auto-Sync Baseline**. The formerly referenced standalone `vn100_multisource_feed_v1` artifact is absent from the working tree, Git history, and committed archives, so it is not a delivered executable subsystem. Maintained provider and source-sync code is integrated under `src/vnquant/`, with tests under `src/tests/`. Live provider validation remains pending; SSI stays DISABLED.
 
 
 # 25. SSI-FREE RUNTIME MIGRATION CONTRACT `[GUESS]`
@@ -2021,7 +2022,7 @@ test_raw_payload_persisted_before_canonical_commit
 
 ## 26.9. Implementation status
 
-`PARTIALLY IMPLEMENTED` as of 2026-09-13. `vn100_multisource_feed_v1` implements the provider/scanner/cache/DQ subset and passes 10/10 offline tests. The legacy v3.1 main application still does not satisfy the complete v3.5 runtime contract; Streamlit/service integration and live Source Admission remain pending.
+`PARTIALLY IMPLEMENTED` as of 2026-09-14. The referenced `vn100_multisource_feed_v1` package was never committed and provides no reproducible evidence. Provider, cache, DQ, and source-sync capabilities are maintained under `src/vnquant/` and tested from `src/tests/`; the application still does not satisfy the complete v3.5 runtime contract, and live Source Admission remains pending.
 
 > ## DISCLAIMER
 >
@@ -2068,74 +2069,41 @@ client.get_ohlc(
 
 For this EOD module, `resolution="1D"` is used as `[GUESS]` based on the documented WebSocket daily-resolution token. The exact REST resolution acceptance, live response and accepted VN100 index filter still require runtime verification.
 
-## 27.2. Delivered package
+## 27.2. Missing standalone artifact and maintained path
+
+The previously documented `vn100_multisource_feed_v1/` tree was not found in the repository working tree, any reachable Git commit, or the committed ZIP archives during the 2026-09-14 audit. Its proposed `vn100_feed/`, standalone tests, packaging files, and examples are therefore **not delivered repository content**.
+
+The maintained, unversioned implementation path is `src/vnquant/`, including:
 
 ```text
-vn100_multisource_feed_v1/
-├── vn100_feed/
-│   ├── contracts.py
-│   ├── quality.py
-│   ├── cache.py
-│   ├── scanner.py
-│   ├── doctor.py
-│   └── providers/
-│       ├── dnse.py
-│       ├── vietstock.py
-│       └── cafef.py
-├── tests/
-├── examples/streamlit_integration.py
-├── requirements.txt
-├── requirements-live.txt
-└── README.md
+src/vnquant/data/providers/   DNSE, contract-gated Vietstock, CafeF reference adapters
+src/vnquant/data/storage.py   canonical SQLite storage
+src/vnquant/data/quality.py   data-quality validation
+src/vnquant/data/source_sync.py persisted governed synchronization
+src/vnquant/jobs/doctor.py    application doctor checks
+src/tests/                    integrated offline tests
 ```
 
-### DNSEProvider
+This integrated code retains the fail-closed and provider-governance requirements in this section. It is not evidence of a delivered standalone scanner package, provider admission, or real-data validation.
 
-- lazy official SDK import;
-- API Key/Secret only;
-- exposes `current_index_members` + `daily_history` only in this module;
-- no Trading Token, OTP or order routing;
-- canonicalizes OHLC to VND/date/provider lineage;
-- fail-closed response validation.
+## 27.3. Offline evidence correction
 
-`index_name="VN100"` is `[GUESS]` pending a successful live call because the SDK exposes an `index_name` argument but the accepted index-name enumeration was not verified in the public rendered schema.
-
-### CafeFReferenceProvider
-
-- disabled unless `allow_reference_source=True`;
-- fetches the public historical HTML page, not an undocumented JSON/XHR API;
-- parses OHLC/volume and converts CafeF's displayed `nghìn VNĐ` unit to canonical VND;
-- does not provide authoritative VN100 membership;
-- intentionally refuses to pretend page-1 data covers an older requested history range.
-
-Automated CafeF use remains subject to terms/rights verification.
-
-### VietstockDataFeedProvider
-
-- generic contract-gated JSON adapter;
-- requires base URL, paths, auth headers, query-parameter names, response record paths and field map from an authorized Vietstock contract;
-- provides **no guessed default production endpoints**;
-- fails closed when contract mapping is missing.
-
-### SQLiteMarketCache + VN100Scanner
-
-- provider/symbol/date cache;
-- incremental refetch from `latest_date - recheck_days`;
-- parallel primary fetch;
-- DQ before acceptance;
-- secondary validators cannot silently become primary;
-- provider disagreements are flagged, never averaged.
-
-Operational defaults `recheck_days=5`, `validator_sample_size=10`, `close_diff_tolerance=0.5%` are `[GUESS]` and configurable.
-
-## 27.3. Offline evidence
+The formerly documented package-local commands cannot be reproduced because neither `vn100_feed/` nor its standalone `examples/` and packaging metadata were committed:
 
 ```text
-python -m compileall -q vn100_feed examples   PASS
-python -m pytest -q                           10 passed
+python -m compileall -q vn100_feed examples   NOT REPRODUCIBLE (paths absent)
+python -m pytest -q                           historical standalone result withdrawn
 ```
 
-These tests use fake DNSE responses and local CafeF HTML fixtures. They prove implementation mechanics only. They do not establish external API availability, live schema correctness, data accuracy or trading alpha. The delivered read-only `dnse doctor` can validate connectivity/schema mechanics on the user's machine, but it explicitly keeps `real_data_validated=false` until cross-source reconciliation and Source Admission complete.
+Validation of maintained code must instead be run from `src/` using its checked-in test configuration and dependencies:
+
+```text
+cd src
+python -m compileall -q vnquant             PASS
+python -m pytest -q                          56 passed (2026-09-14)
+```
+
+Such fixture/offline tests prove implementation mechanics only; they do not establish external API availability, live schema correctness, data accuracy, trading alpha, Source Admission, or `REAL_DATA_VALIDATED` status.
 
 ## 27.4. Live admission checklist
 
@@ -2157,7 +2125,7 @@ Before `DNSE_OPENAPI` is marked ADMITTED:
 [ ] raw response retention/licence approved
 ```
 
-Until then, module status remains `IMPLEMENTED + TESTED_OFFLINE`, not `VALIDATED_REAL_DATA`.
+Until then, provider status remains **NOT LIVE VALIDATED / NOT ADMITTED**. The missing standalone artifact must not be described as implemented, offline-tested, or `VALIDATED_REAL_DATA`.
 
 
 # 28. v3.5 VERIFICATION SOURCES

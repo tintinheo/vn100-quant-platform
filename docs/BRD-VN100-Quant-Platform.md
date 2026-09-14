@@ -21,9 +21,10 @@
 | 3.2 | 2026-09-10 | Multi-source data governance, provider trust tiers, source-admission/reconciliation rules. |
 | 3.3 | 2026-09-10 | SSI FastConnect removed from active architecture; SSI-Free baseline. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run requirement: sync-if-stale, cache, fail-safe; CSV/XLSX demoted to fallback/debug. |
-| **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, 10/10 offline tests. No live-data validation claim.** |
+| **3.5** | **2026-09-13** | **DNSE-first auto-sync research and implementation: read-only DNSE adapter, CafeF reference validator, Vietstock contract gate, SQLite incremental scanner, with an offline-test claim later withdrawn by the 2026-09-14 artifact audit. No live-data validation claim.** |
 | **3.5.1** | **2026-09-13** | **Integrated stable `src/vnquant/data/providers/` implementations and default non-admitted registry entries; HTTP success remains separate from Source Admission. No live-data validation claim.** |
 | **3.5.2** | **2026-09-13** | **Integrated the persisted `SourceSyncOrchestrator` below app/pipeline entry points, cache-lineage visibility, and fail-closed recommendation gating. Offline tests only; provider admission is unchanged.** |
+| **3.5.3** | **2026-09-14** | **Repository audit found that `vn100_multisource_feed_v1` was never committed; removed its unreproducible 10/10 claim and recorded `src/vnquant/` as the maintained implementation path. Live-validation/admission status is unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1877,20 +1878,13 @@ Current public DNSE material verifies a documented OpenAPI market-data surface w
 
 Vietstock DataFeed remains a strong licensed feed candidate, especially for broader normalized financial/fundamental/event data, but its exact contract remains customer-specific/TBD until authorized material is supplied. CafeF remains T2 reference evidence: the historical pages expose OHLC/volume and label prices as `nghìn VNĐ`, but no equivalent official public API contract was verified.
 
-## 29.2. Implemented module status
+## 29.2. Actual implementation status
 
-Delivered module: `vn100_multisource_feed_v1`.
+A repository audit on 2026-09-14 found no package, tests, packaging files, or examples for `vn100_multisource_feed_v1` in the working tree, Git history, or committed archives. The standalone artifact was therefore **never committed to this repository**, and its former `10/10 PASS` claim is withdrawn as unreproducible.
 
-```text
-status = IMPLEMENTED + TESTED_OFFLINE
-unit/offline tests = 10/10 PASS
-live DNSE validation = NOT PERFORMED
-live Vietstock DataFeed validation = NOT PERFORMED
-live CafeF automation validation = NOT PERFORMED
-production Source Admission = NOT GRANTED
-```
+The maintained implementation is instead integrated under `src/vnquant/`, with tests under `src/tests/`. DNSE/Vietstock/CafeF providers and source-sync logic exist there; the full integrated suite run from `src/` passed 56 offline tests on 2026-09-14. The list below describes the intended contract of the missing artifact, not a delivered standalone package:
 
-The module implements:
+Intended components:
 
 ```text
 DNSEProvider
