@@ -33,6 +33,7 @@
 | **3.5.9** | **2026-09-14** | **Hợp nhất đánh giá DQ canonical, lưu lịch sử DQ/sync gắn canonical revision, và thực thi confidence/actionability gate hiện có tại §17. Chỉ offline-tested; provider admission và real-data status không đổi.** |
 | **3.5.10** | **2026-09-14** | **Phân loại SSI adapter, doctor/bootstrap và implementation report v3.1 trong archive là lịch sử/bị vô hiệu hóa; thêm ranh giới package, distribution, dependency, import và test discovery. Bắt buộc giữ negative SSI-retirement tests.** |
 | **3.5.11** | **2026-09-14** | **Đã implement bộ acceptance test offline §28.7 bằng DNSE SDK response giả, Vietstock contract data được inject, CafeF HTML cục bộ, clock/calendar deterministic, kiểm tra concurrency và temporary storage. Toàn bộ maintained suite: 99 passed; không claim provider admission hoặc live-data validation.** |
+| **3.5.12** | **2026-09-14** | **Đối chiếu toàn bộ statement về implementation với nội dung repository được track: package độc lập `vn100_multisource_feed_v1` không có, còn `src/vnquant/` là implementation SSI-free được duy trì và full suite pass 99 tests offline. Không claim live validation/admission.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1150,7 +1151,7 @@ BRD và SRD phải cùng major/minor baseline sau material change. Code có th�
 
 ## 26.4. Current synchronization state
 
-Tại 2026-09-10, BRD/SRD đồng bộ ở **v3.3 SSI-Free Multi-Source Baseline**. Executable source hiện vẫn là legacy v3.1 có SSI-specific code; đường đó bị **DISABLED BY PRODUCT POLICY** và không compliant với v3.3 real-data ingestion. Kết quả 18/18 tests chỉ là legacy implementation evidence.
+Tại **2026-09-14**, các tài liệu canonical đồng bộ ở baseline **3.5 SSI-Free DNSE-First Auto-Sync**. Executable implementation được duy trì là package được track tại `src/vnquant/`, với tests tại `src/tests/`; archive v3.1 có SSI đã bị quarantine và chỉ là historical evidence. Package độc lập `vn100_multisource_feed_v1` không có trong checkout hoặc Git history. Full maintained suite pass 99 tests offline; chưa provider nào được admitted hoặc live-data validated.
 
 ---
 
@@ -1175,14 +1176,7 @@ Future research/implementation **không được đề xuất SSI** làm primary
 
 ## 27.3. Implementation delta bắt buộc
 
-Revision executable tiếp theo tối thiểu phải:
-- remove SSI runtime dependency/config;
-- remove SSI-specific first-run instructions;
-- generic provider registry;
-- explicit `NO_ADMITTED_PROVIDER` state;
-- pipeline không silent fallback sang scraped/synthetic data trong real-data mode;
-- thêm controlled manual CSV/Excel importer có provider lineage/hash;
-- chuẩn bị adapter contract cho Vietstock DataFeed sau khi được admitted.
+Maintained revision tại `src/vnquant/` đã remove SSI khỏi active runtime dependency/config, dùng generic evidence-gated provider registry, expose `NO_ADMITTED_PROVIDER`, giữ lineage/hash cho controlled file import và fail closed thay vì silent fallback sang scraped/synthetic data. Phần còn thiếu là live provider admission, authorized contract verification và real-data validation; package standalone bị thiếu không phải implementation dependency.
 
 ---
 
@@ -1334,7 +1328,7 @@ Vietstock DataFeed vẫn là licensed feed candidate mạnh cho normalized finan
 
 Audit repository ngày 2026-09-14 không tìm thấy package, tests, packaging files hoặc examples của `vn100_multisource_feed_v1` trong working tree, Git history hay các archive đã commit. Vì vậy artifact độc lập này **chưa từng được commit trong repository này** và claim `10/10 tests PASS` trước đây không thể tái lập nên đã bị rút lại.
 
-Implementation được duy trì hiện nằm tại `src/vnquant/`, với tests tại `src/tests/`. Các provider DNSE/Vietstock/CafeF và source-sync logic đã được tích hợp ở đó; full integrated suite chạy từ `src/` đã pass 60 tests offline ngày 2026-09-14. Danh sách dưới đây chỉ mô tả contract dự kiến của artifact bị thiếu, không phải package đã giao:
+Implementation được duy trì hiện nằm tại `src/vnquant/`, với tests tại `src/tests/`. Các provider DNSE/Vietstock/CafeF và source-sync logic đã được tích hợp ở đó; full integrated suite chạy từ `src/` đã pass 99 tests offline ngày 2026-09-14. Danh sách dưới đây chỉ mô tả contract dự kiến của artifact bị thiếu, không phải package đã giao:
 
 Module dự kiến gồm:
 

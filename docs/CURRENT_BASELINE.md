@@ -56,6 +56,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (canonical DQ service)** | **2026-09-14** | **Unified DQ checks and revision/sync-report persistence and enforced confidence/actionability gates. Offline tested only; no live-validation or provider-admission change.** |
 | **3.5 (historical isolation)** | **2026-09-14** | **Quarantined the v3.1 SSI archive/report from imports, builds, dependencies and test discovery; retained negative retirement tests. No provider/admission/live-validation change.** |
 | **3.5 (acceptance suite)** | **2026-09-14** | **Implemented BRD §28.7 and SRD §§25.2/26.8 offline acceptance coverage with deterministic, non-network provider fixtures and temporary storage. Full suite: 99 passed; no provider/admission/live-validation change.** |
+| **3.5 (status reconciliation)** | **2026-09-14** | **Compared all canonical implementation-status statements with tracked contents and reconciled the five documents: standalone `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` is implemented and tested offline (99 passed). No live-validation/admission change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 
