@@ -31,6 +31,7 @@
 | **3.5.7** | **2026-09-14** | **Completed capability-specific freshness, provider/capability watermarks, deterministic rerun keys, synchronization locking, incremental/recheck fetches, raw snapshot lineage, and explicit force refresh. Weekday-only calendar and recheck defaults remain `[GUESS]`; provider admission is unchanged.** |
 | **3.5.8** | **2026-09-14** | **Required provider fetch contracts to expose immutable raw payloads and request metadata before normalization; bootstrap and sync now persist evidence before canonical bars, and authorized CSV imports hash every price/universe file. Offline tested only; provider admission is unchanged.** |
 | **3.5.9** | **2026-09-14** | **Unified canonical DQ evaluation, persisted revision-linked DQ/sync history, and enforced the existing §17 confidence/actionability gates. Offline tested only; provider admission and real-data status are unchanged.** |
+| **3.5.10** | **2026-09-14** | **Classified the archived v3.1 SSI adapter, doctor/bootstrap paths, and implementation report as historical/disabled, and added package, distribution, dependency, import, and test-discovery boundaries. Negative SSI-retirement tests remain mandatory.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1976,3 +1977,10 @@ Before this module is described as `VALIDATED_REAL_DATA`, execute at least:
 - https://api.vietstock.vn/
 - https://dichvu.vietstock.vn/dao-tao/khoa-hoc---nhap-mon-tai-chinh-va-chung-khoan?index=44
 - https://cafef.vn/du-lieu/lich-su-giao-dich-sdk-1.chn
+
+
+# 33. HISTORICAL v3.1 SSI ARTIFACT BOUNDARY
+
+`legacy/vnquant_realdata_v3_1_gptcode_impl.zip`, including its embedded `vnquant/data/ssi.py`, SSI-specific `vnquant/jobs/doctor.py` and `vnquant/jobs/bootstrap.py`, credential/setup files, and `ssi-sdk` reference, is retained solely as immutable historical evidence. `legacy/IMPLEMENTATION_REPORT_GPTCODE_STYLE.md` describes that same retired build and is explicitly disabled. Neither artifact states the current implementation, test status, or real-data validation status.
+
+The active package and deployment distributions must be discovered exclusively from `src/vnquant`. `legacy/` must be absent from wheel/source distributions, dependency declarations and pytest discovery, and direct checkout imports must fail closed. Negative tests rejecting SSI provider identifiers, credentials, modules, and dependencies are regression controls and must not be deleted merely because SSI is retired. No provider evidence, admission, or real-data-validation status changes under this archival classification.

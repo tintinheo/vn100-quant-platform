@@ -31,6 +31,7 @@
 | **3.5.7** | **2026-09-14** | **Implemented the complete application sync-service mechanics: capability/provider resolution, independent persisted watermarks and policies, expected-session calculation, deterministic freshness keys, cross-rerun locking, incremental/recheck fetch, immutable raw snapshots, idempotent canonical merges, force refresh, and persisted per-capability results. Offline tested only.** |
 | **3.5.8** | **2026-09-14** | **Implemented raw-first provider fetch results, evidence-before-normalization/canonical-write ordering, full canonical lineage fields, and exact-byte hashing/snapshotting for authorized price and universe files. Offline tested only.** |
 | **3.5.9** | **2026-09-14** | **Made `DataQualityService` the canonical DQ implementation; added date/session/staleness/band/status/unit/semantics/lineage/admission/disagreement/corporate-action checks, append-only revision-linked DQ and sync reports, and pipeline/recommendation DQ gates. Offline tested only.** |
+| **3.5.10** | **2026-09-14** | **Quarantined the historical v3.1 SSI archive/report behind package, built-distribution, dependency, import, and pytest-discovery checks while retaining negative SSI retirement coverage.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2170,3 +2171,10 @@ Until then, provider status remains **NOT LIVE VALIDATED / NOT ADMITTED**. The m
 - https://api.vietstock.vn/
 - https://dichvu.vietstock.vn/dao-tao/khoa-hoc---nhap-mon-tai-chinh-va-chung-khoan?index=44
 - https://cafef.vn/du-lieu/lich-su-giao-dich-sdk-1.chn
+
+
+# 31. HISTORICAL-ARTIFACT ISOLATION
+
+The repository may retain `legacy/vnquant_realdata_v3_1_gptcode_impl.zip` and its disabled implementation report for audit history. The archive's SSI adapter and SSI-specific doctor/bootstrap are non-executable evidence, not source inputs.
+
+The build configuration shall use `src/` layout and an explicit `vnquant` package allow-list. Source and wheel artifacts shall exclude `legacy/`, ZIP files, historical implementation reports, and tests. Declared runtime/optional dependencies shall contain neither SSI packages nor local/archive references. Pytest shall discover only `src/tests` and shall not recurse into `legacy`. A checkout-root `import legacy` shall fail closed, while `vnquant.data.ssi` shall remain unresolved. Automated boundary tests and a built-artifact inspection command shall enforce these properties. Existing negative SSI-retirement tests remain required.

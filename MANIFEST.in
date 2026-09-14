@@ -1,0 +1,4 @@
+prune legacy
+prune src/tests
+exclude src/IMPLEMENTATION_REPORT_GPTCODE_STYLE.md
+exclude *.zip

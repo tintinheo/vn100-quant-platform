@@ -31,6 +31,7 @@
 | **3.5.7** | **2026-09-14** | **Hoàn tất freshness theo capability, watermark theo provider/capability, deterministic rerun key, synchronization lock, incremental/recheck fetch, raw snapshot lineage và force refresh rõ ràng. Calendar chỉ loại cuối tuần và recheck defaults vẫn là `[GUESS]`; provider admission không đổi.** |
 | **3.5.8** | **2026-09-14** | **Bắt buộc provider fetch trả raw payload bất biến cùng request metadata trước normalization; bootstrap và sync lưu evidence trước canonical bars, và CSV được ủy quyền hash mọi file giá/universe. Chỉ offline-tested; provider admission không đổi.** |
 | **3.5.9** | **2026-09-14** | **Hợp nhất đánh giá DQ canonical, lưu lịch sử DQ/sync gắn canonical revision, và thực thi confidence/actionability gate hiện có tại §17. Chỉ offline-tested; provider admission và real-data status không đổi.** |
+| **3.5.10** | **2026-09-14** | **Phân loại SSI adapter, doctor/bootstrap và implementation report v3.1 trong archive là lịch sử/bị vô hiệu hóa; thêm ranh giới package, distribution, dependency, import và test discovery. Bắt buộc giữ negative SSI-retirement tests.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1380,3 +1381,10 @@ Không reverse-engineer Vietstock/CafeF browser endpoint thành production API. 
 - https://api.vietstock.vn/
 - https://dichvu.vietstock.vn/dao-tao/khoa-hoc---nhap-mon-tai-chinh-va-chung-khoan?index=44
 - https://cafef.vn/du-lieu/lich-su-giao-dich-sdk-1.chn
+
+
+# 33. RANH GIỚI ARTIFACT SSI v3.1 LỊCH SỬ
+
+`legacy/vnquant_realdata_v3_1_gptcode_impl.zip`, gồm `vnquant/data/ssi.py`, `vnquant/jobs/doctor.py`, `vnquant/jobs/bootstrap.py`, các file credential/setup và tham chiếu `ssi-sdk`, chỉ được giữ làm bằng chứng lịch sử bất biến. `legacy/IMPLEMENTATION_REPORT_GPTCODE_STYLE.md` mô tả cùng build đã retired và được ghi rõ là bị vô hiệu hóa. Không artifact nào thể hiện implementation, test status hoặc real-data validation hiện tại.
+
+Active package và deployment distribution chỉ được discover từ `src/vnquant`. `legacy/` phải vắng mặt khỏi wheel/source distribution, dependency declarations và pytest discovery; import trực tiếp từ checkout phải fail closed. Negative tests từ chối SSI provider ID, credentials, module và dependency là regression controls bắt buộc giữ lại. Phân loại archive này không thay đổi provider evidence, admission hoặc real-data-validation status.

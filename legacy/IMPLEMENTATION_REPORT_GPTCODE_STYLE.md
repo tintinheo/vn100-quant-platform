@@ -1,3 +1,10 @@
+> **HISTORICAL ARTIFACT — DISABLED**
+>
+> This report describes the retired v3.1 SSI-based implementation preserved in
+> `legacy/vnquant_realdata_v3_1_gptcode_impl.zip`. It is not an active-runtime,
+> deployment, dependency, or test-status report. SSI FastConnect and its
+> doctor/bootstrap flows are disabled by the baseline 3.5 product policy.
+
 # VNQuant v3.1 — Agentic Implementation Report
 
 ## Scope implemented in this iteration

@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.4 — 2026-09-14**
+**Current internal revision:** **1.5 — 2026-09-14**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -16,6 +16,7 @@
 | **1.2** | **2026-09-14** | **Audit found the referenced `vn100_multisource_feed_v1` artifact was never committed; withdrew its unreproducible test claim and identified `src/vnquant/` as maintained implementation. Provider evidence/admission is unchanged.** |
 | **1.3** | **2026-09-14** | **Hardened the maintained adapters so Vietstock requires endpoint semantics and retention rights before I/O and CafeF cannot be promoted from reference-only status. DNSE assumptions and provider evidence/admission are unchanged.** |
 | **1.4** | **2026-09-14** | **Implemented evidence-backed admission records and legal lifecycle transitions. Provider research evidence/admission is unchanged.** |
+| **1.5** | **2026-09-14** | **Documented the v3.1 SSI adapter and doctor/bootstrap archive as historical/disabled and added repository isolation checks. Provider evidence and admission are unchanged.** |
 
 ## 1. Kết luận
 
@@ -95,3 +96,8 @@ All are configurable and are not validated trading-alpha thresholds.
 - Vietstock API landing: https://api.vietstock.vn/
 - Vietstock Services/DataFeed: https://dichvu.vietstock.vn/dao-tao/khoa-hoc---nhap-mon-tai-chinh-va-chung-khoan?index=44
 - CafeF historical data sample: https://cafef.vn/du-lieu/lich-su-giao-dich-sdk-1.chn
+
+
+## 8. Historical SSI evidence boundary
+
+The unaltered `legacy/vnquant_realdata_v3_1_gptcode_impl.zip` contains the retired `SSIFastConnectV3Provider`, SSI credential environment variables, an `ssi-sdk` dependency, and SSI-specific doctor/bootstrap entry points. It and `legacy/IMPLEMENTATION_REPORT_GPTCODE_STYLE.md` are audit artifacts only and are excluded from active package discovery, built distributions, dependency resolution, imports, and pytest discovery. Negative SSI retirement tests remain deliberate regression controls. This classification supplies no new provider evidence and changes no admission or real-data-validation state.
