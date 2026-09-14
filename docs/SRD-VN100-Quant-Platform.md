@@ -32,6 +32,7 @@
 | **3.5.8** | **2026-09-14** | **Implemented raw-first provider fetch results, evidence-before-normalization/canonical-write ordering, full canonical lineage fields, and exact-byte hashing/snapshotting for authorized price and universe files. Offline tested only.** |
 | **3.5.9** | **2026-09-14** | **Made `DataQualityService` the canonical DQ implementation; added date/session/staleness/band/status/unit/semantics/lineage/admission/disagreement/corporate-action checks, append-only revision-linked DQ and sync reports, and pipeline/recommendation DQ gates. Offline tested only.** |
 | **3.5.10** | **2026-09-14** | **Quarantined the historical v3.1 SSI archive/report behind package, built-distribution, dependency, import, and pytest-discovery checks while retaining negative SSI retirement coverage.** |
+| **3.5.11** | **2026-09-14** | **Implemented the §§25.2/26.8 offline acceptance harness with deterministic injectable clocks, fake DNSE SDK calls, an injected Vietstock contract fixture, local CafeF HTML, temporary warehouses, raw-order/lineage assertions, idempotence, and concurrent-rerun coverage. Full suite: 99 passed; admission/live-validation status is unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2042,6 +2043,11 @@ test_manual_file_not_required_for_normal_startup
 test_raw_payload_persisted_before_canonical_commit
 ```
 
+The dedicated offline harness is maintained in
+`src/tests/test_auto_sync_acceptance.py`; its provider fixtures never perform
+network I/O. Passing these tests demonstrates runtime mechanics only and does
+not admit or live-validate DNSE, Vietstock, or CafeF.
+
 ## 26.9. Implementation status
 
 Canonical validation is owned by `src/vnquant/data/quality.py`; `schema.py` retains
@@ -2131,7 +2137,7 @@ Validation of maintained code must instead be run from `src/` using its checked-
 ```text
 cd src
 python -m compileall -q vnquant             PASS
-python -m pytest -q                          60 passed (2026-09-14)
+python -m pytest -q                          99 passed (2026-09-14)
 ```
 
 Such fixture/offline tests prove implementation mechanics only; they do not establish external API availability, live schema correctness, data accuracy, trading alpha, Source Admission, or `REAL_DATA_VALIDATED` status.

@@ -72,9 +72,11 @@ class VietstockDataFeedProvider(MarketDataProvider):
         contract: VietstockDataFeedContract | None = None,
         *,
         transport: Callable[..., Any] | None = None,
+        now: Callable[[], datetime] | None = None,
     ) -> None:
         self.contract = contract or VietstockDataFeedContract()
         self.transport = transport
+        self._now = now or (lambda: datetime.now(timezone.utc))
 
     def _request(self, operation: str, parameters: Mapping[str, str]) -> ProviderFetch:
         self.contract.validate()
@@ -88,7 +90,7 @@ class VietstockDataFeedProvider(MarketDataProvider):
         )
         payload = response.json() if callable(getattr(response, "json", None)) else response
         return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
-            datetime.now(timezone.utc), dict(parameters), self.adapter_version,
+            self._now(), dict(parameters), self.adapter_version,
             self.contract.base_url + self.contract.paths[operation], self.trust_tier,
             str(self.contract.units.get("raw_price_unit", "contract_defined")),
             str(self.contract.units.get("price_semantics", "contract_defined")))

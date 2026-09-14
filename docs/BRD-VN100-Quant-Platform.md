@@ -32,6 +32,7 @@
 | **3.5.8** | **2026-09-14** | **Required provider fetch contracts to expose immutable raw payloads and request metadata before normalization; bootstrap and sync now persist evidence before canonical bars, and authorized CSV imports hash every price/universe file. Offline tested only; provider admission is unchanged.** |
 | **3.5.9** | **2026-09-14** | **Unified canonical DQ evaluation, persisted revision-linked DQ/sync history, and enforced the existing §17 confidence/actionability gates. Offline tested only; provider admission and real-data status are unchanged.** |
 | **3.5.10** | **2026-09-14** | **Classified the archived v3.1 SSI adapter, doctor/bootstrap paths, and implementation report as historical/disabled, and added package, distribution, dependency, import, and test-discovery boundaries. Negative SSI-retirement tests remain mandatory.** |
+| **3.5.11** | **2026-09-14** | **Implemented the §28.7 offline acceptance suite with fake DNSE SDK responses, injected Vietstock contract data, local CafeF HTML, deterministic time/calendar inputs, concurrency checks, and temporary storage. Full maintained suite: 99 passed; no provider admission or live-data-validation claim.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1857,6 +1858,10 @@ test_manual_file_is_not_required_for_normal_startup
 test_raw_response_snapshotted_before_normalization
 test_sync_lineage_records_provider_and_fetch_time
 ```
+
+These criteria are covered by the maintained offline suite under `src/tests/`,
+including the dedicated `test_auto_sync_acceptance.py` harness. Fixture-only
+admission transitions do not change any real provider's governance state.
 
 ## 28.8. Verification sources — refreshed 2026-09-13
 

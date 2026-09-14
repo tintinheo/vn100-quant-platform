@@ -17,7 +17,7 @@
 - Leading automated market-data candidate: **DNSE OpenAPI `[GUESS]`** — documented and adapter implemented, but **NOT ADMITTED / NOT LIVE VALIDATED**.
 - Licensed secondary/alternative candidate: **Vietstock DataFeed `[GUESS]`** — generic contract-gated adapter implemented; live contract/access pending.
 - CafeF: **reference / explicit opt-in validation**, not a silent production fallback or authoritative VN100-membership source.
-- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 60 offline tests on 2026-09-14.
+- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 99 offline tests on 2026-09-14.
 - Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
 - Provider governance: structured evidence and the enforced `CANDIDATE → DOCTOR_PASSED → CROSS_VALIDATED → ADMITTED` lifecycle now replace the prior boolean access flag; no provider advanced from its prior state.
 - Runtime integration: application startup and the actionable analytics pipeline now consume a persisted governed sync result; absent an admitted provider or accepted cache, candidate generation fails closed with `NO_ADMITTED_PROVIDER`.
@@ -55,6 +55,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (raw-evidence contract)** | **2026-09-14** | **Provider/file fetches now retain raw payload and request context before normalization, and canonical writes require persisted raw evidence. Offline tested only; no live-validation or provider-admission change.** |
 | **3.5 (canonical DQ service)** | **2026-09-14** | **Unified DQ checks and revision/sync-report persistence and enforced confidence/actionability gates. Offline tested only; no live-validation or provider-admission change.** |
 | **3.5 (historical isolation)** | **2026-09-14** | **Quarantined the v3.1 SSI archive/report from imports, builds, dependencies and test discovery; retained negative retirement tests. No provider/admission/live-validation change.** |
+| **3.5 (acceptance suite)** | **2026-09-14** | **Implemented BRD §28.7 and SRD §§25.2/26.8 offline acceptance coverage with deterministic, non-network provider fixtures and temporary storage. Full suite: 99 passed; no provider/admission/live-validation change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

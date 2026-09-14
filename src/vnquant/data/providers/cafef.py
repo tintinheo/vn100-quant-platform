@@ -2,11 +2,55 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import date, datetime, timezone
+from html.parser import HTMLParser
 
 import pandas as pd
 
 from ..base import CANONICAL_COLUMNS, DataMode, MarketDataProvider, ProviderFetch
 from .common import ProviderConfigurationError, ProviderResponseError
+
+
+class _FirstTableParser(HTMLParser):
+    """Small dependency-free parser for the explicit public-table contract."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.table_depth = 0
+        self.cell: list[str] | None = None
+        self.row: list[str] | None = None
+        self.rows: list[list[str]] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag == "table":
+            self.table_depth += 1
+        elif self.table_depth == 1 and tag == "tr":
+            self.row = []
+        elif self.table_depth == 1 and self.row is not None and tag in {"th", "td"}:
+            self.cell = []
+
+    def handle_data(self, data: str) -> None:
+        if self.cell is not None:
+            self.cell.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self.table_depth == 1 and tag in {"th", "td"} and self.cell is not None:
+            assert self.row is not None
+            self.row.append("".join(self.cell).strip())
+            self.cell = None
+        elif self.table_depth == 1 and tag == "tr" and self.row is not None:
+            if self.row:
+                self.rows.append(self.row)
+            self.row = None
+        elif tag == "table" and self.table_depth:
+            self.table_depth -= 1
+
+    def frame(self) -> pd.DataFrame:
+        if len(self.rows) < 2:
+            raise ProviderResponseError("CafeF public page contains no populated table")
+        header, records = self.rows[0], self.rows[1:]
+        if any(len(record) != len(header) for record in records):
+            raise ProviderResponseError("CafeF HTML table has inconsistent columns")
+        return pd.DataFrame(records, columns=header)
 
 
 class CafeFReferenceProvider(MarketDataProvider):
@@ -24,9 +68,11 @@ class CafeFReferenceProvider(MarketDataProvider):
         *,
         allow_reference_source: bool = False,
         page_fetcher: Callable[[str], str] | None = None,
+        now: Callable[[], datetime] | None = None,
     ) -> None:
         self.allow_reference_source = allow_reference_source
         self.page_fetcher = page_fetcher
+        self._now = now or (lambda: datetime.now(timezone.utc))
 
     def _require_enabled(self) -> None:
         if not self.allow_reference_source:
@@ -45,15 +91,13 @@ class CafeFReferenceProvider(MarketDataProvider):
         # Public HTML only; never an undocumented JSON/XHR endpoint.
         url = f"https://cafef.vn/du-lieu/lich-su-giao-dich-{symbol.lower()}-1.chn"
         payload = self.page_fetcher(url).encode("utf-8")
-        return ProviderFetch(self.provider_id, payload, datetime.now(timezone.utc),
+        return ProviderFetch(self.provider_id, payload, self._now(),
             {"symbol": symbol.upper(), "start": start.isoformat(), "end": end.isoformat()},
             self.adapter_version, url, "reference_only", "thousand_VND", "adjustment_semantics_unverified")
 
     def normalize_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
-        from io import BytesIO
-        tables = pd.read_html(BytesIO(fetched.payload))
-        if not tables:
-            raise ProviderResponseError("CafeF public page contains no table")
+        parser = _FirstTableParser()
+        parser.feed(fetched.payload.decode("utf-8"))
         aliases = {
             "trading_date": ("Ngày", "Ngay"),
             "open": ("Mở cửa", "Mo cua"),
@@ -62,7 +106,7 @@ class CafeFReferenceProvider(MarketDataProvider):
             "close": ("Đóng cửa", "Dong cua"),
             "volume": ("KL khớp lệnh", "KL giao dịch", "KLGD"),
         }
-        table = tables[0]
+        table = parser.frame()
         selected: dict[str, object] = {}
         for canonical, candidates in aliases.items():
             match = next((column for column in table.columns if any(name in str(column) for name in candidates)), None)

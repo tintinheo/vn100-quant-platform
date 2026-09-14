@@ -32,6 +32,7 @@
 | **3.5.8** | **2026-09-14** | **Bắt buộc provider fetch trả raw payload bất biến cùng request metadata trước normalization; bootstrap và sync lưu evidence trước canonical bars, và CSV được ủy quyền hash mọi file giá/universe. Chỉ offline-tested; provider admission không đổi.** |
 | **3.5.9** | **2026-09-14** | **Hợp nhất đánh giá DQ canonical, lưu lịch sử DQ/sync gắn canonical revision, và thực thi confidence/actionability gate hiện có tại §17. Chỉ offline-tested; provider admission và real-data status không đổi.** |
 | **3.5.10** | **2026-09-14** | **Phân loại SSI adapter, doctor/bootstrap và implementation report v3.1 trong archive là lịch sử/bị vô hiệu hóa; thêm ranh giới package, distribution, dependency, import và test discovery. Bắt buộc giữ negative SSI-retirement tests.** |
+| **3.5.11** | **2026-09-14** | **Đã implement bộ acceptance test offline §28.7 bằng DNSE SDK response giả, Vietstock contract data được inject, CafeF HTML cục bộ, clock/calendar deterministic, kiểm tra concurrency và temporary storage. Toàn bộ maintained suite: 99 passed; không claim provider admission hoặc live-data validation.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1306,6 +1307,10 @@ test_manual_file_is_not_required_for_normal_startup
 test_raw_response_snapshotted_before_normalization
 test_sync_lineage_records_provider_and_fetch_time
 ```
+
+Các tiêu chí này được cover bởi maintained offline suite trong `src/tests/`,
+bao gồm harness riêng `test_auto_sync_acceptance.py`. Admission transition chỉ
+dùng fixture không làm thay đổi governance state của bất kỳ provider thật nào.
 
 ## 28.8. Nguồn verify cập nhật 2026-09-13
 
