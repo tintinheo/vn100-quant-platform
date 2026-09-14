@@ -6,7 +6,7 @@ import pandas as pd
 
 from dataclasses import asdict, is_dataclass
 
-from .models import CanonicalBar, RawSnapshot
+from .models import CanonicalBar, IndexBar, RawSnapshot
 from .quality import DataQualityService
 
 class Warehouse:
@@ -75,6 +75,28 @@ class Warehouse:
             self._append_table(pd.DataFrame([_record_dict(issue) for issue in issues]),
                                "data_quality_results")
         return output
+
+    def append_index_bars(self, bars: list[IndexBar]) -> Path:
+        """Persist official index observations without mixing them with equities."""
+        if not bars:
+            raise ValueError("index bars must not be empty")
+        for bar in bars:
+            matches = list((self.raw/bar.provider).glob(f"{bar.raw_snapshot_id}.*.bin"))
+            if not matches:
+                raise ValueError(f"unknown raw_snapshot_id: {bar.raw_snapshot_id}")
+            metadata = json.loads(matches[0].with_suffix(matches[0].suffix+".json").read_text("utf-8"))
+            if bar.payload_sha256 != "unknown" and metadata.get("payload_sha256") != bar.payload_sha256:
+                raise ValueError(f"index lineage does not match raw snapshot: {bar.raw_snapshot_id}")
+        incoming = pd.DataFrame([_record_dict(bar) for bar in bars])
+        table = self.parquet/"index_bars.parquet"
+        if table.exists():
+            existing = pd.read_parquet(table)
+            overlap = incoming.merge(existing[["index_code", "timestamp", "provider"]],
+                                     on=["index_code", "timestamp", "provider"], how="inner")
+            if not overlap.empty:
+                raise ValueError("DUPLICATE_INDEX_BAR: observation already stored")
+            incoming = pd.concat([existing, incoming], ignore_index=True)
+        return self.write_table(incoming, "index_bars")
 
     def persist_dq_evaluation(self, evaluation, *, sync_run_id: str | None = None) -> None:
         """Append an auditable DQ evaluation tied to a canonical revision/sync."""
@@ -155,7 +177,7 @@ class Warehouse:
         glob=str((self.parquet/"bars"/"*.parquet").as_posix())
         if list((self.parquet/"bars").glob("*.parquet")):
             con.execute(f"CREATE OR REPLACE VIEW bars AS SELECT * FROM read_parquet('{glob}', union_by_name=true)")
-        for table in ("security_master","universe_current","market_regimes","sector_scores","candidates"):
+        for table in ("security_master","universe_current","index_bars","market_regimes","sector_scores","candidates"):
             p=self.parquet/f"{table}.parquet"
             if p.exists():
                 con.execute(f"CREATE OR REPLACE VIEW {table} AS SELECT * FROM read_parquet('{p.as_posix()}')")

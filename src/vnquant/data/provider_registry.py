@@ -289,6 +289,7 @@ def default_provider_registry() -> ProviderRegistry:
             capability_definitions={
                 "daily_ohlcv": "documented OHLC endpoint; live schema unverified [GUESS]",
                 "current_index_members": "instrument index filter; VN100 literal unverified [GUESS]",
+                "index_daily_ohlct": "documented OHLC endpoint with INDEX bar type/schema unverified [GUESS]",
             },
             owner="data-platform owner",
         ),

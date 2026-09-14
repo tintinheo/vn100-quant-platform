@@ -38,6 +38,7 @@
 | **3.5.14** | **2026-09-14** | **Audited runtime constants/default arguments and moved configurable DQ, feature, regime, sector, recommendation, doctor and slippage values into the versioned `quant_parameters.v1.yaml` registry. Every unverified runtime value is literal `[D] [GUESS]` with a calibration/verification requirement; structural score/base and market-rule identities remain `[S]`. Full suite: 101 passed offline.** |
 | **3.5.15** | **2026-09-14** | **Clarified that every run is a synchronization check, not a three-provider fetch: capability state and explicit force determine I/O; only admitted providers are eligible, DNSE is preferred, Vietstock remains contract/admission-gated, and CafeF remains explicit sampled validation. Full suite: 102 passed offline; no admission/live-validation status change.** |
 | **3.5.16** | **2026-09-14** | **Implemented effective-dated official VN100 review ingestion and source-snapshot lineage, a versioned effective-dated sector taxonomy, and fail-closed backtest naming/capital-qualification rules. Offline tested only; no live-data/provider-admission change.** |
+| **3.5.17** | **2026-09-14** | **Required canonical, raw-snapshot-lineaged VN-Index/VN100 OHLC and turnover for the cap-weighted regime leg. An absent or stale official series is an explicit degraded proxy state and may not produce either bull regime. Offline tested only; provider admission/live validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -473,6 +474,14 @@ For VN-Index and for a self-computed EQUAL-WEIGHT VN100 index:
 
 s = MIN(score_cap_weighted, score_equal_weighted)
 ```
+
+The cap-weighted input and self-computed equal-weight input must be genuinely
+independent series. Copying the equal-weight series into the cap-weighted slot
+is prohibited. Official VN-Index is preferred; official VN100 may be used when
+its provenance and semantics are admitted. If neither official series is
+present through the latest expected session, publish `DEGRADED_PROXY_UNAVAILABLE`
+or `DEGRADED_PROXY_STALE`; absent an explicit future BRD exception, that state
+**must not classify either Strong Bull or Concentrated Bull**.
 
 Taking the minimum is not generic caution. A capitalisation index can be
 carried by two or three mega-caps while the median security falls; the

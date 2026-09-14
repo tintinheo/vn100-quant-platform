@@ -38,6 +38,7 @@
 | **3.5.14** | **2026-09-14** | **Implemented a packaged, schema/version-checked quantitative parameter registry and removed configurable literals/default arguments from DQ, features, market/regime/sector, recommendations and doctor paths. Registry validation requires every unverified default to be `[D] [GUESS]` with an explicit calibration/verification requirement. Full suite: 101 passed offline.** |
 | **3.5.15** | **2026-09-14** | **Made the single-provider, admission-gated DNSE-first routing rule explicit and regression-tested that routine/fresh reruns do not fan out to every provider. Vietstock and CafeF legal gates remain unchanged; offline tested only.** |
 | **3.5.16** | **2026-09-14** | **Implemented immutable official-review CSV evidence ingestion into effective-dated VN100 records, the canonical sector-taxonomy store and PIT lineage propagation, plus an executable historical-backtest/capital-qualification governance contract. Offline tested only.** |
+| **3.5.17** | **2026-09-14** | **Implemented canonical official-index OHLC/turnover ingestion with immutable raw lineage, independent cap/equal-weight pipeline inputs, explicit absent/stale proxy status, and divergence regressions. Offline tested only; admission/live validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -765,8 +766,9 @@ bars(symbol, ts, interval, open, high, low, close, volume, value,
 order_flow(symbol, ts, bid_volume, ask_volume, bid_orders, ask_orders,
            matched_volume, foreign_buy, foreign_sell);
 
-index_series(index_code, ts, open, high, low, close, volume);
-    -- includes the SELF-COMPUTED equal-weight index
+index_series(index_code, ts, open, high, low, close, turnover,
+             provider, ingested_at, raw_snapshot_id, payload_sha256);
+    -- official provider series retain lineage; self-computed equal-weight is separate
 
 -- Point-in-time metadata -------------------------------------------
 universe(index_code, symbol, effective_from, effective_to,
@@ -990,6 +992,12 @@ def compute_regime(cap_index, ew_index, breadth, turnover) -> Regime:
     if s >= 1 or  breadth.pct_ma50 >= 0.25:         return RISK_OFF
     return PANIC_BEAR
 ```
+
+The pipeline reads the cap leg only from canonical `index_series` observations
+whose raw snapshot lineage is retained and whose latest date equals the equity
+panel date. Missing/stale official data supplies an unavailable (not copied)
+cap leg, emits a degraded proxy mode, and therefore scores zero, preventing
+bull classification under BRD §6.2. Index turnover uses its own rolling mean.
 
 Inputs also include realised-volatility regime, top-N contribution
 concentration and sector participation.

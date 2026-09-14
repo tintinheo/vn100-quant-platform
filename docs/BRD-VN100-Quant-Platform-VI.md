@@ -38,6 +38,7 @@
 | **3.5.14** | **2026-09-14** | **Audit constant/default argument runtime và chuyển các giá trị DQ, feature, regime, sector, recommendation, doctor và slippage có thể cấu hình vào registry có version `quant_parameters.v1.yaml`. Mọi giá trị chưa xác minh mang literal `[D] [GUESS]` cùng yêu cầu calibration/verification; identity về score/base và market rule mang `[S]`. Full suite: 101 passed offline.** |
 | **3.5.15** | **2026-09-14** | **Làm rõ mỗi lần chạy là synchronization check, không phải fetch cả ba provider: capability state và force rõ ràng quyết định I/O; chỉ provider admitted mới hợp lệ, ưu tiên DNSE, Vietstock vẫn contract/admission-gated và CafeF chỉ dùng để sampled validation rõ ràng. Full suite: 102 passed offline; không thay đổi trạng thái admission/live validation.** |
 | **3.5.16** | **2026-09-14** | **Đã triển khai ingestion review VN100 chính thức theo effective date và lineage snapshot nguồn, taxonomy ngành theo phiên bản/effective date, cùng quy tắc fail-closed cho tên backtest và qualification vốn thật. Chỉ test offline; không thay đổi live-data/provider admission.** |
+| **3.5.17** | **2026-09-14** | **Bắt buộc OHLC và turnover VN-Index/VN100 canonical, có lineage raw snapshot cho nhánh cap-weighted. Series official thiếu hoặc stale phải công bố degraded proxy và không được tạo bull regime. Chỉ offline-tested; admission/live validation không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -327,6 +328,14 @@ score = 1[C>MA50] + 1[C>MA200] + 1[MA50>MA200]
 
 s = MIN(score_cap_weighted, score_equal_weighted)
 ```
+
+Input cap-weighted và Equal-Weight VN100 phải là hai series độc lập thật sự;
+không được sao chép equal-weight sang nhánh cap-weighted. Ưu tiên VN-Index
+official, chỉ dùng VN100 official khi provenance/semantics đã admitted. Nếu
+series official thiếu hoặc không tới expected session mới nhất, phải công bố
+`DEGRADED_PROXY_UNAVAILABLE` hoặc `DEGRADED_PROXY_STALE`; khi BRD chưa cho phép
+ngoại lệ rõ ràng, trạng thái này **không được** phân loại Strong Bull hoặc
+Concentrated Bull.
 
 Không được quyết định regime chỉ bằng một điều kiện như “VN-Index > MA200”.
 

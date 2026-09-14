@@ -179,6 +179,13 @@ class IndexBar:
     ingested_at: datetime
     quality_flags: tuple[str, ...]
     raw_snapshot_id: str
+    trust_tier: str = "unknown"
+    raw_price_unit: str = "unknown"
+    price_semantics: str = "unknown"
+    request_parameters: str = "{}"
+    adapter_version: str = "unknown"
+    source_reference: str = "unknown"
+    payload_sha256: str = "unknown"
 
     def __post_init__(self) -> None:
         _utc(self.timestamp, "timestamp")

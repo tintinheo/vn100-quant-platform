@@ -39,7 +39,7 @@ class DNSEProvider(MarketDataProvider):
     """DNSE read-only market-data adapter; it intentionally exposes no trading API."""
 
     provider_id = "dnse_openapi"
-    capabilities = frozenset({"daily_ohlcv", "current_index_members"})
+    capabilities = frozenset({"daily_ohlcv", "current_index_members", "index_daily_ohlct"})
     data_mode = DataMode.REAL
     read_only = True
     adapter_version = "1"
@@ -133,3 +133,23 @@ class DNSEProvider(MarketDataProvider):
             provider_id=self.provider_id,
             price_multiplier=self.price_multiplier,
         )
+
+    def fetch_index_daily_history(self, index_code: str, start: date, end: date) -> ProviderFetch:
+        # [GUESS] DNSE's live index bar_type and VNINDEX literal require doctor/cross-validation evidence.
+        parameters = {"bar_type": "INDEX", "query": {"symbol": index_code.upper(),
+            "resolution": self.resolution, "from": unix_seconds(start), "to": unix_seconds(end)},
+            "dry_run": False}
+        response = self.client.get_ohlc(**parameters)
+        payload = response.json() if callable(getattr(response, "json", None)) else response
+        return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
+            self._now(), parameters, self.adapter_version, "GET /price/ohlc",
+            self.trust_tier, self.raw_price_unit, "official_index_raw_ohlc_[GUESS]")
+
+    def normalize_index_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
+        frame = self.normalize_daily_history(fetched)
+        # [GUESS] ``value`` is the injectable/default turnover field; absent data
+        # remains null and can never confirm a bull regime.
+        records = self._records(json.loads(fetched.payload))
+        if records and all("value" in record for record in records):
+            frame["value"] = pd.to_numeric([record["value"] for record in records], errors="raise")
+        return frame.rename(columns={"symbol": "index_code", "value": "turnover"})
