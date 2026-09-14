@@ -17,7 +17,7 @@
 - Leading automated market-data candidate: **DNSE OpenAPI `[GUESS]`** — documented and adapter implemented, but **NOT ADMITTED / NOT LIVE VALIDATED**.
 - Licensed secondary/alternative candidate: **Vietstock DataFeed `[GUESS]`** — generic contract-gated adapter implemented; live contract/access pending.
 - CafeF: **reference / explicit opt-in validation**, not a silent production fallback or authoritative VN100-membership source.
-- Executable data subsystem: `vn100_multisource_feed_v1` — **IMPLEMENTED + TESTED_OFFLINE, 10/10 PASS**.
+- Referenced standalone artifact: `vn100_multisource_feed_v1` — **NOT PRESENT IN THIS REPOSITORY**; its documented package-local commands and historical 10/10 result are not reproducible. The maintained implementation is the integrated `src/vnquant/` code and `src/tests/`; its full suite passed 56 offline tests on 2026-09-14.
 - Main trading/analytics app: stable provider implementations are now integrated under `src/vnquant/data/providers/` and registered as non-admitted by default; broader legacy v3.1 migration remains pending.
 - Runtime integration: application startup and the actionable analytics pipeline now consume a persisted governed sync result; absent an admitted provider or accepted cache, candidate generation fails closed with `NO_ADMITTED_PROVIDER`.
 - Real-data validation: **NOT YET PERFORMED**.
@@ -42,6 +42,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 |---|---|---|
 | 3.3 | 2026-09-10 | SSI removed from active architecture. |
 | 3.4 | 2026-09-13 | Auto-refresh-on-run / sync-if-stale data ingestion. |
-| **3.5** | **2026-09-13** | **DNSE-first provider research + implemented/offline-tested multi-source scanner.** |
+| **3.5** | **2026-09-13** | **DNSE-first provider research + standalone-scanner delivery claim later withdrawn by the 2026-09-14 artifact audit.** |
 | **3.5 (integration update)** | **2026-09-13** | **Stable main-package providers registered in non-admitted states; no live-validation or admission status change.** |
 | **3.5 (sync-gate update)** | **2026-09-13** | **Persisted source-sync gate integrated beneath startup and actionable analytics; offline regression tested, with no live-validation or admission status change.** |
+| **3.5 (artifact audit)** | **2026-09-14** | **Recorded that `vn100_multisource_feed_v1` was never committed here, removed the unreproducible 10/10 claim, and identified `src/vnquant/` as the maintained implementation path. No live-validation or admission status change.** |

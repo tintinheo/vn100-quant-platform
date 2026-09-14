@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.1 — 2026-09-13**
+**Current internal revision:** **1.2 — 2026-09-14**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -11,8 +11,9 @@
 
 | Revision | Date | Change |
 |---|---|---|
-| **1.0** | **2026-09-13** | **Verified DNSE documented OpenAPI/SDK; retained Vietstock as contract-gated candidate; CafeF as explicit reference source; implemented/offline-tested multi-source feed module.** |
+| **1.0** | **2026-09-13** | **Verified DNSE documented OpenAPI/SDK; retained Vietstock as contract-gated candidate; CafeF as explicit reference source; recorded a standalone-module delivery claim later withdrawn by revision 1.2.** |
 | **1.1** | **2026-09-13** | **Integrated the three adapters into the stable `vnquant` package with non-admitted default registry states and offline admission-separation tests; provider evidence is unchanged.** |
+| **1.2** | **2026-09-14** | **Audit found the referenced `vn100_multisource_feed_v1` artifact was never committed; withdrew its unreproducible test claim and identified `src/vnquant/` as maintained implementation. Provider evidence/admission is unchanged.** |
 
 ## 1. Kết luận
 
@@ -53,31 +54,11 @@
 
 **Decision:** implement `CafeFReferenceProvider` bằng public HTML table, **explicit opt-in**, rate-limited/reference-only. Giá được chuyển từ thousand VND sang canonical VND. Không dùng CafeF làm authoritative VN100 membership hoặc silent production fallback.
 
-## 4. Module đã implement
+## 4. Trạng thái artifact thực tế
 
-`vn100_multisource_feed_v1`
+Audit ngày 2026-09-14 không tìm thấy `vn100_multisource_feed_v1`, source tree `vn100_feed/`, standalone tests, packaging files hoặc examples trong working tree, Git history hay các archive đã commit. Artifact này chưa từng được commit vào repository; do đó các lệnh package-local và kết quả offline đã ghi trước đây không thể tái lập và bị rút lại.
 
-- `DNSEProvider`
-- `VietstockDataFeedProvider`
-- `CafeFReferenceProvider`
-- `SQLiteMarketCache`
-- `VN100Scanner`
-- canonical OHLCV schema + DQ validation
-- incremental recent-window refresh
-- optional cross-source close comparison
-- no silent fallback
-- no averaging provider disagreement
-- no auto-trading/order routing
-
-### Offline verification
-
-```text
-python -m compileall -q vn100_feed examples   PASS
-python -m pytest -q                           10 passed
-pip install -e . --no-deps --no-build-isolation   PASS
-```
-
-No live external provider call was executed in the build environment. Therefore status is **IMPLEMENTED + TESTED_OFFLINE**, not `VALIDATED_REAL_DATA`.
+Implementation được duy trì nằm tại `src/vnquant/`, với integrated tests tại `src/tests/`. Audit đã chạy `cd src && python -m compileall -q vnquant` thành công và `cd src && python -m pytest -q` với kết quả 56 passed. Trạng thái này không chứng minh provider live connectivity, schema/units thực tế, Source Admission hoặc real-data validation.
 
 ## 4.1. Stable-package integration
 
