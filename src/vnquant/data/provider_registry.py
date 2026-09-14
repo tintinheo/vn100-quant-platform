@@ -285,7 +285,7 @@ def default_provider_registry() -> ProviderRegistry:
         DNSEProvider(),
         evidence=AdmissionEvidence(
             access_basis="official public OpenAPI documentation",
-            licence_reference="DNSE API Platform terms/access agreement review pending",
+            licence_reference="DNSE API Platform terms/access agreement review pending [GUESS]",
             capability_definitions={
                 "daily_ohlcv": "documented OHLC endpoint; live schema unverified [GUESS]",
                 "current_index_members": "instrument index filter; VN100 literal unverified [GUESS]",
@@ -298,7 +298,7 @@ def default_provider_registry() -> ProviderRegistry:
         CafeFReferenceProvider(),
         state=ProviderState.RESEARCH_ONLY,
         evidence=AdmissionEvidence(
-            access_basis="public reference pages; automated production rights unverified",
+            access_basis="public reference pages; automated production rights unverified [GUESS]",
             licence_reference="CafeF page reference-use notice",
             capability_definitions={
                 "reference_daily_ohlcv": "explicit opt-in HTML reference comparison"

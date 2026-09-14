@@ -1,0 +1,235 @@
+schema_version: 1
+config_version: "quant-parameters-v1-2026-09-14"
+parameters:
+  dq.confidence_cap:
+    value: 70
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §17 default; calibrate against observed DQ failures and recommendation outcomes before real use."
+  dq.actionable_block:
+    value: 50
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] BRD §17 default; calibrate against observed DQ failures and false-actionable outcomes before real use."
+  dq.fail_penalty:
+    value: 35
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Validate severity scoring against labelled provider/data incidents."
+  dq.warn_penalty:
+    value: 10
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Validate severity scoring against labelled provider/data incidents."
+  features.rs_horizons:
+    value: [20, 126]
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate horizons with walk-forward, regime-aware tests; sessions are not independently verified alpha parameters."
+  features.ma_windows:
+    value: [20, 50, 200]
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate feature windows out of sample; formulas are conventional but these choices are unverified here."
+  features.rsi_window:
+    value: 14
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate the lookback out of sample before recommendation use."
+  features.zscore_window:
+    value: 60
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate stability and responsiveness on admitted real data."
+  features.zscore_min_periods:
+    value: 20
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify minimum-history reliability on admitted real data."
+  features.winsor_lower:
+    value: 0.01
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate tail treatment without using future cross-sections."
+  features.winsor_upper:
+    value: 0.99
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate tail treatment without using future cross-sections."
+  features.pullback_volume_short_window:
+    value: 5
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate using point-in-time, walk-forward setup outcomes."
+  features.pullback_volume_multiplier:
+    value: 1.10
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate using point-in-time, walk-forward setup outcomes."
+  features.pullback_trend_buffer:
+    value: 0.02
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by volatility/archetype on admitted real data."
+  features.pullback_ma_distance_bounds:
+    value: [-0.04, 0.02]
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by volatility/archetype using walk-forward tests."
+  features.reversal_rsi_max:
+    value: 32
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate reversal threshold by regime/archetype."
+  features.reversal_close_location_min:
+    value: 0.60
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate candle-location evidence out of sample."
+  features.setup_score_weights:
+    value: {trend: 0.35, ma_distance: 0.25, reclaim: 0.20, volatility: 0.20}
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Fit at regime level only and validate out of sample."
+  features.setup_ma_distance_scale:
+    value: 0.06
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by volatility and archetype out of sample."
+  features.setup_atr_scale:
+    value: 0.08
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by volatility and archetype out of sample."
+  features.volume_score_neutral:
+    value: 0.5
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate the score transform after live volume-unit verification."
+  features.volume_score_slope:
+    value: 0.2
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate the score transform after live volume-unit verification."
+  market.equal_weight_base:
+    value: 1000.0
+    classification: "[S]"
+    requirement: "[S] Index rebasing identity only; changing it must not change returns or decisions."
+  execution.slippage_bps:
+    value: 15.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Measure from execution-relevant admitted data by liquidity, regime and order type before backtest use."
+  backtest.hold_sessions:
+    value: 20
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate with nested walk-forward tests and preserve policy/regulatory exit dates separately."
+  backtest.entry_premium:
+    value: 0.005
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Measure fill/return trade-offs using execution-relevant admitted data."
+  backtest.maximum_gap:
+    value: 0.02
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Measure overnight-gap distributions by regime, liquidity and setup family."
+  corporate_actions.minimum_factor_jump:
+    value: 0.005
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify sensitivity against authoritative effective-dated corporate-action records."
+  provider.dnse_resolution:
+    value: "1D"
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify the exact supported resolution literal with a live read-only doctor run."
+  provider.dnse_index_name:
+    value: "VN100"
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify the exact supported index literal with a live read-only doctor run."
+  provider.dnse_price_multiplier:
+    value: 1.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify live response units and reconcile prices before canonical admission."
+  market.breadth_windows:
+    value: [20, 50, 200]
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate breadth horizons out of sample."
+  market.ad_slope_window:
+    value: 10
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate breadth trend horizon out of sample."
+  market.turnover_window:
+    value: 20
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate turnover baseline on admitted real data."
+  market.turnover_min_periods:
+    value: 10
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify minimum-history reliability on admitted real data."
+  regime.strong_breadth_min:
+    value: 0.60
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime boundary with expanding-window validation."
+  regime.strong_turnover_min:
+    value: 1.00
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime boundary with expanding-window validation."
+  regime.concentrated_breadth_min:
+    value: 0.45
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime boundary with expanding-window validation."
+  regime.concentrated_turnover_min:
+    value: 0.85
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime boundary with expanding-window validation."
+  regime.range_breadth_min:
+    value: 0.35
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime boundary with expanding-window validation."
+  regime.risk_off_breadth_min:
+    value: 0.25
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate regime boundary with expanding-window validation."
+  sector.weights:
+    value: {rs20: 0.30, rs126: 0.30, breadth: 0.25, volume_impulse: 0.15}
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Fit only under the governed hierarchy and validate out of sample."
+  recommendations.rs_long_min:
+    value: 60.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by regime with walk-forward tests."
+  recommendations.rs_short_pullback_max:
+    value: 40.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by regime with walk-forward tests."
+  recommendations.rs_short_momentum_min:
+    value: 65.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by regime with walk-forward tests."
+  recommendations.rs_short_reversal_max:
+    value: 25.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate by regime/archetype with walk-forward tests."
+  recommendations.sector_min:
+    value: 45.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate sector gate with point-in-time membership."
+  recommendations.momentum_volume_z_min:
+    value: 0.5
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Calibrate on admitted volume data after unit/schema verification."
+  recommendations.score_weights:
+    value: {long_rs: 0.35, short_rs: 0.15, sector: 0.25, setup: 0.15, volume: 0.10}
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Fit at regime level only and validate using nested walk-forward evaluation."
+  recommendations.neutral_component_score:
+    value: 0.5
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify missing-component handling; missing evidence must not inflate confidence."
+  recommendations.neutral_sector_score:
+    value: 50.0
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify missing-sector handling with point-in-time sector coverage."
+  scores.maximum:
+    value: 100.0
+    classification: "[S]"
+    requirement: "[S] Defined score-scale upper bound, not an alpha threshold."
+  scores.minimum:
+    value: 0.0
+    classification: "[S]"
+    requirement: "[S] Defined score-scale lower bound, not an alpha threshold."
+  doctor.symbol:
+    value: "VNM"
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify that the diagnostic symbol is active, covered and representative for each admitted provider."
+  doctor.lookback_days:
+    value: 90
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify sufficient history for provider schema/coverage diagnostics."
+  doctor.calendar_day_multiplier:
+    value: 2
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Replace with an authoritative exchange-session calendar and measured provider coverage behavior."
+  doctor.index:
+    value: "VN100"
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify the exact provider index literal live before promotion."
+  doctor.member_sample_size:
+    value: 8
+    classification: "[D] [GUESS]"
+    requirement: "[GUESS] Verify sufficient diagnostic evidence; display count has no admission significance."

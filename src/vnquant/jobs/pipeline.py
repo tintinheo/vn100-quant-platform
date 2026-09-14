@@ -11,6 +11,7 @@ from vnquant.market.sector_rotation import compute_sector_scores
 from vnquant.recommendations.engine import detect_candidates
 from vnquant.data.sector_membership import apply_sector_mapping
 from vnquant.data.source_sync import SourceSyncOrchestrator
+from vnquant.data.quality import apply_dq_policy
 
 
 def _publish_blocked_result(sync, publish_dir: str) -> dict:
@@ -48,7 +49,7 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     if not sync.actionable:
         return _publish_blocked_result(sync,publish_dir)
     wh=Warehouse(data_dir); panel, sector_mode, sector_warning=_load_panel(wh,sector_pit_path)
-    panel=add_cross_sectional_rs(panel,horizons=(20,126))
+    panel=add_cross_sectional_rs(panel)
     breadth=compute_breadth(panel); ew=build_equal_weight_index(panel)
 
     # Cap-index proxy in offline mode: current-universe equal-weight series.
@@ -61,10 +62,11 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     rr=compute_regime(capr,ewr,br)
     sectors=compute_sector_scores(panel,latest_date)
     latest=panel[panel.trading_date==latest_date].copy()
-    dq_score=int(getattr(sync,"dq_score",100 if sync.dq_status == "PASS" else 69))
+    dq_score=int(sync.dq_score)
+    _, dq_actionable = apply_dq_policy(0.0, dq_score)
     candidates=detect_candidates(latest,rr.regime,sectors,dq_score=dq_score,
                                  dq_actionable=sync.actionable)
-    if dq_score < 50:
+    if not dq_actionable:
         candidates=candidates.iloc[0:0]
 
     wh.write_table(sectors,"sector_scores")
@@ -86,7 +88,7 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
             "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
             "degraded_mode":sync.degraded_mode,"cache_accepted":sync.cache_accepted,
             "status":sync.status,"dq_score":dq_score,
-            "actionable":bool(sync.actionable and dq_score >= 50)}
+            "actionable":bool(sync.actionable and dq_actionable)}
     (out/"market.json").write_text(json.dumps(market,ensure_ascii=False,indent=2),encoding="utf-8")
     return market
 

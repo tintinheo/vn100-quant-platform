@@ -10,11 +10,16 @@ from uuid import uuid4
 import pandas as pd
 
 from .models import CanonicalBar, DataIssue, DataQualityResult, QualityStatus
+from vnquant.config import parameter_value
 
 REQUIRED = {"symbol", "trading_date", "open", "high", "low", "close", "volume", "provider"}
-CONFIDENCE_CAP_THRESHOLD = 70  # [D], BRD section 17
-ACTIONABLE_BLOCK_THRESHOLD = 50  # [D], BRD section 17
-_PENALTY = {QualityStatus.FAIL: 35, QualityStatus.WARN: 10, QualityStatus.PASS: 0}
+CONFIDENCE_CAP_THRESHOLD = int(parameter_value("dq.confidence_cap"))
+ACTIONABLE_BLOCK_THRESHOLD = int(parameter_value("dq.actionable_block"))
+_PENALTY = {
+    QualityStatus.FAIL: int(parameter_value("dq.fail_penalty")),
+    QualityStatus.WARN: int(parameter_value("dq.warn_penalty")),
+    QualityStatus.PASS: 0,
+}
 HARD_BLOCK_CODES = frozenset({
     "INVALID_DATE", "MISSING_SESSION", "STALE_DATA", "PRICE_BAND_BREACH",
     "TRADING_STATUS_BLOCKED", "UNIT_UNKNOWN", "RAW_ADJUSTED_AMBIGUOUS",
@@ -152,7 +157,8 @@ def validate_bars(df: pd.DataFrame) -> list[DataIssue]:
 
 
 def quality_score(issues: Sequence[DataIssue | DataQualityResult]) -> int:
-    severity = {"ERROR": 35, "FAIL": 35, "WARN": 10, "INFO": 0, "PASS": 0}
+    severity = {"ERROR": _PENALTY[QualityStatus.FAIL], "FAIL": _PENALTY[QualityStatus.FAIL],
+                "WARN": _PENALTY[QualityStatus.WARN], "INFO": 0, "PASS": 0}
     return max(0, 100 - sum(severity[getattr(item.severity if isinstance(item, DataIssue) else item.status, "value", item.severity if isinstance(item, DataIssue) else item.status)] for item in issues))
 
 

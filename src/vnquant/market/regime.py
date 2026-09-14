@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 import pandas as pd
+from vnquant.config import parameter_value
 
 class Regime(IntEnum):
     PANIC_BEAR = 0
@@ -36,13 +37,13 @@ def compute_regime(cap_row, ew_row, breadth_row) -> RegimeResult:
     tr = None if tr_raw is None or pd.isna(tr_raw) else float(tr_raw)
 
     # Missing turnover must NEVER confirm Strong/Concentrated Bull.
-    if tr is not None and s == 3 and b50 >= 0.60 and ad_up and tr >= 1.00:
+    if tr is not None and s == 3 and b50 >= float(parameter_value("regime.strong_breadth_min")) and ad_up and tr >= float(parameter_value("regime.strong_turnover_min")):
         return RegimeResult(Regime.STRONG_BULL, cap, ew, b50, tr, "dual-index trend + breadth + turnover confirmed")
-    if tr is not None and s >= 2 and b50 >= 0.45 and tr >= 0.85:
+    if tr is not None and s >= 2 and b50 >= float(parameter_value("regime.concentrated_breadth_min")) and tr >= float(parameter_value("regime.concentrated_turnover_min")):
         return RegimeResult(Regime.CONCENTRATED_BULL, cap, ew, b50, tr, "positive trend with partial breadth/turnover")
-    if s >= 1 and b50 >= 0.35:
+    if s >= 1 and b50 >= float(parameter_value("regime.range_breadth_min")):
         reason = "range/neutral; turnover missing caps bull classification" if tr is None else "mixed trend/breadth"
         return RegimeResult(Regime.RANGE, cap, ew, b50, tr, reason)
-    if s >= 1 or b50 >= 0.25:
+    if s >= 1 or b50 >= float(parameter_value("regime.risk_off_breadth_min")):
         return RegimeResult(Regime.RISK_OFF, cap, ew, b50, tr, "weak trend or breadth")
     return RegimeResult(Regime.PANIC_BEAR, cap, ew, b50, tr, "trend and breadth both weak")
