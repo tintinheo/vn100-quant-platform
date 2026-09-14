@@ -42,7 +42,7 @@ def test_missing_sessions_are_reported_without_forward_fill():
     missing = NOW + timedelta(days=1)
     bars = [_bar("p1", "s1")]
     results = validate_canonical_bars(bars, expected_sessions={NOW, missing})
-    assert [(result.code, result.timestamp) for result in results] == [("MISSING_SESSION", missing)]
+    assert ("MISSING_SESSION", missing) in [(result.code, result.timestamp) for result in results]
     assert len(bars) == 1
 
 
@@ -56,6 +56,7 @@ def test_storage_requires_raw_lineage_and_rejects_existing_duplicate(tmp_path):
     wh.append_canonical_bars([bar])
     stored = pd.read_parquet(tmp_path / "parquet" / "canonical_bars.parquet")
     assert stored.loc[0, "raw_snapshot_id"] == "s1"
+    assert stored.loc[0, "canonical_revision"]
     with pytest.raises(ValueError, match="DUPLICATE_BAR"):
         wh.append_canonical_bars([bar])
 
@@ -70,7 +71,7 @@ def test_storage_persists_provider_disagreement_in_quality_table(tmp_path):
     bars = pd.read_parquet(tmp_path / "parquet" / "canonical_bars.parquet")
     quality = pd.read_parquet(tmp_path / "parquet" / "data_quality_results.parquet")
     assert bars.close.tolist() == [Decimal("10"), Decimal("12")]
-    assert quality.code.tolist() == ["PROVIDER_DISAGREEMENT"]
+    assert "PROVIDER_DISAGREEMENT" in quality.code.tolist()
 
 
 def _bar(provider, snapshot, close="10"):

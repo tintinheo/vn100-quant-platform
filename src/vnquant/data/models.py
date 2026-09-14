@@ -106,6 +106,7 @@ class DataQualityResult:
     symbol: str | None = None
     timestamp: datetime | None = None
     raw_snapshot_ids: tuple[str, ...] = ()
+    canonical_revision: str | None = None
 
     def __post_init__(self) -> None:
         _utc(self.checked_at, "checked_at")

@@ -30,6 +30,7 @@
 | **3.5.6** | **2026-09-14** | **Made the synchronization outcome a mandatory app/pipeline gate, published `NO_ADMITTED_PROVIDER` when neither an admitted provider nor policy-accepted cache exists, exposed cache/degraded lineage, and suppressed stale actionable artifacts. Offline tested only.** |
 | **3.5.7** | **2026-09-14** | **Completed capability-specific freshness, provider/capability watermarks, deterministic rerun keys, synchronization locking, incremental/recheck fetches, raw snapshot lineage, and explicit force refresh. Weekday-only calendar and recheck defaults remain `[GUESS]`; provider admission is unchanged.** |
 | **3.5.8** | **2026-09-14** | **Required provider fetch contracts to expose immutable raw payloads and request metadata before normalization; bootstrap and sync now persist evidence before canonical bars, and authorized CSV imports hash every price/universe file. Offline tested only; provider admission is unchanged.** |
+| **3.5.9** | **2026-09-14** | **Unified canonical DQ evaluation, persisted revision-linked DQ/sync history, and enforced the existing §17 confidence/actionability gates. Offline tested only; provider admission and real-data status are unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

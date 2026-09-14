@@ -61,7 +61,11 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     rr=compute_regime(capr,ewr,br)
     sectors=compute_sector_scores(panel,latest_date)
     latest=panel[panel.trading_date==latest_date].copy()
-    candidates=detect_candidates(latest,rr.regime,sectors)
+    dq_score=int(getattr(sync,"dq_score",100 if sync.dq_status == "PASS" else 69))
+    candidates=detect_candidates(latest,rr.regime,sectors,dq_score=dq_score,
+                                 dq_actionable=sync.actionable)
+    if dq_score < 50:
+        candidates=candidates.iloc[0:0]
 
     wh.write_table(sectors,"sector_scores")
     wh.write_table(candidates,"candidates")
@@ -81,7 +85,8 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
             "sync_mode":sync.mode,"provider_id":sync.provider_id,"data_age_days":sync.data_age_days,
             "last_sync_at":sync.last_successful_sync,"dq_status":sync.dq_status,
             "degraded_mode":sync.degraded_mode,"cache_accepted":sync.cache_accepted,
-            "status":sync.status,"actionable":True}
+            "status":sync.status,"dq_score":dq_score,
+            "actionable":bool(sync.actionable and dq_score >= 50)}
     (out/"market.json").write_text(json.dumps(market,ensure_ascii=False,indent=2),encoding="utf-8")
     return market
 

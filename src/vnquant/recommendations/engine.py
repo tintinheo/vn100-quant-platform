@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import pandas as pd
 from vnquant.market.regime import Regime
+from vnquant.data.quality import apply_dq_policy
 
 class StrategyFamily(str, Enum):
     TREND_PULLBACK = "TREND_PULLBACK"
@@ -19,6 +20,8 @@ class Candidate:
     rs_short_rank: float
     sector_score: float
     reason: str
+    confidence: float
+    actionable: bool
 
 # [D] thresholds. They are deliberately centralized and must be calibrated on real data.
 RS_LONG_MIN = 60.0
@@ -27,7 +30,8 @@ RS_SHORT_MOMENTUM_MIN = 65.0
 SECTOR_MIN = 45.0
 
 
-def detect_candidates(latest: pd.DataFrame, regime: Regime, sector_scores: pd.DataFrame) -> pd.DataFrame:
+def detect_candidates(latest: pd.DataFrame, regime: Regime, sector_scores: pd.DataFrame,
+                      *, dq_score: int = 100, dq_actionable: bool = True) -> pd.DataFrame:
     if regime == Regime.PANIC_BEAR or latest.empty:
         return pd.DataFrame(columns=[f.name for f in Candidate.__dataclass_fields__.values()])
     ss = sector_scores.set_index("sector").leadership_score.to_dict() if not sector_scores.empty else {}
@@ -52,5 +56,9 @@ def detect_candidates(latest: pd.DataFrame, regime: Regime, sector_scores: pd.Da
         vol=float(r.get("volume_confirmation", 0.5) or 0.5)
         # [D] explainable baseline score; not a probability.
         score=0.35*long_rank + 0.15*(100-short_rank if family != StrategyFamily.MOMENTUM_CONTINUATION else short_rank) + 0.25*sector_score + 25*(0.6*setup+0.4*vol)
-        rows.append(asdict(Candidate(str(r.symbol), r.trading_date, family.value, min(100.0,float(score)), long_rank, short_rank, sector_score, "; ".join(reason))))
+        score = min(100.0, float(score))
+        confidence, threshold_actionable = apply_dq_policy(score, dq_score)
+        actionable = bool(dq_actionable and threshold_actionable)
+        rows.append(asdict(Candidate(str(r.symbol), r.trading_date, family.value, score,
+            long_rank, short_rank, sector_score, "; ".join(reason), confidence, actionable)))
     return pd.DataFrame(rows).sort_values("score",ascending=False).reset_index(drop=True) if rows else pd.DataFrame(columns=Candidate.__dataclass_fields__)

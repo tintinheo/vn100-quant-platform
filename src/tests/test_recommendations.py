@@ -12,3 +12,15 @@ def test_pullback_family_can_fire():
     sectors=pd.DataFrame([{"sector":"BANK","leadership_score":80}])
     out=detect_candidates(latest,Regime.RANGE,sectors)
     assert len(out)==1 and out.iloc[0].family=="TREND_PULLBACK"
+
+def test_dq_caps_candidate_confidence_below_70():
+    latest=pd.DataFrame([{"symbol":"AAA","trading_date":"2026-01-01","sector":"BANK","rs_stock_market_rank_126":80,"rs_stock_market_rank_20":20,"signal_pullback":True}])
+    sectors=pd.DataFrame([{"sector":"BANK","leadership_score":80}])
+    out=detect_candidates(latest,Regime.RANGE,sectors,dq_score=69)
+    assert out.iloc[0].confidence == 69 and bool(out.iloc[0].actionable)
+
+def test_dq_below_50_marks_candidate_non_actionable():
+    latest=pd.DataFrame([{"symbol":"AAA","trading_date":"2026-01-01","sector":"BANK","rs_stock_market_rank_126":80,"rs_stock_market_rank_20":20,"signal_pullback":True}])
+    sectors=pd.DataFrame([{"sector":"BANK","leadership_score":80}])
+    out=detect_candidates(latest,Regime.RANGE,sectors,dq_score=49)
+    assert not bool(out.iloc[0].actionable) and out.iloc[0].confidence == 49

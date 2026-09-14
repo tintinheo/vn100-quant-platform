@@ -98,6 +98,8 @@ def test_fresh_cache_avoids_duplicate_remote_fetch(tmp_path):
     assert first.remote_fetch_performed
     assert second.run_id == first.run_id
     assert provider.calls == 1
+    reports = pd.read_parquet(tmp_path / "parquet" / "sync_reports.parquet")
+    assert reports.run_id.tolist() == [first.run_id]
 
 
 def test_streamlit_rerun_does_not_refetch_same_state(tmp_path):

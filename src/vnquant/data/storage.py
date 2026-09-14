@@ -7,7 +7,7 @@ import pandas as pd
 from dataclasses import asdict, is_dataclass
 
 from .models import CanonicalBar, RawSnapshot
-from .schema import validate_canonical_bars
+from .quality import DataQualityService
 
 class Warehouse:
     """Parquet + DuckDB local warehouse. Imports are lazy so hosted viewer need not install them."""
@@ -35,7 +35,8 @@ class Warehouse:
 
     def append_canonical_bars(self, bars: list[CanonicalBar]) -> Path:
         """Append validated observations; conflicting providers remain separate rows."""
-        issues=validate_canonical_bars(bars)
+        evaluation=DataQualityService().evaluate(bars)
+        issues=list(evaluation.results)
         failures=[issue for issue in issues if issue.code == "DUPLICATE_BAR"]
         if failures:
             raise ValueError("DUPLICATE_BAR: duplicate canonical observations in batch")
@@ -53,7 +54,8 @@ class Warehouse:
             if bar.request_parameters != "{}" and metadata.get("request_parameters") != json.loads(bar.request_parameters):
                 raise ValueError(f"canonical request metadata does not match raw snapshot: {bar.raw_snapshot_id}")
         table=self.parquet/"canonical_bars.parquet"
-        incoming=pd.DataFrame([_record_dict(bar) for bar in bars])
+        incoming=pd.DataFrame([{**_record_dict(bar), "canonical_revision": evaluation.canonical_revision}
+                               for bar in bars])
         if table.exists():
             existing=pd.read_parquet(table)
             keys=["symbol","timestamp","provider"]
@@ -62,10 +64,41 @@ class Warehouse:
                 raise ValueError("DUPLICATE_BAR: observation already stored")
             incoming=pd.concat([existing,incoming],ignore_index=True)
         output=self.write_table(incoming,"canonical_bars")
+        self._append_table(pd.DataFrame([{
+            "canonical_revision": evaluation.canonical_revision,
+            "evaluation_id": evaluation.evaluation_id,
+            "created_at": evaluation.checked_at,
+            "row_count": len(bars), "dq_score": evaluation.score,
+            "dq_status": evaluation.status.value, "actionable": evaluation.actionable,
+        }]), "canonical_revisions")
         if issues:
             self._append_table(pd.DataFrame([_record_dict(issue) for issue in issues]),
                                "data_quality_results")
         return output
+
+    def persist_dq_evaluation(self, evaluation, *, sync_run_id: str | None = None) -> None:
+        """Append an auditable DQ evaluation tied to a canonical revision/sync."""
+        summary = pd.DataFrame([{
+            "evaluation_id": evaluation.evaluation_id,
+            "canonical_revision": evaluation.canonical_revision,
+            "sync_run_id": sync_run_id, "checked_at": evaluation.checked_at,
+            "score": evaluation.score, "status": evaluation.status.value,
+            "confidence_capped": evaluation.confidence_capped,
+            "actionable": evaluation.actionable,
+        }])
+        self._append_table(summary, "dq_evaluations")
+        if evaluation.results:
+            rows = pd.DataFrame([{**_record_dict(result), "sync_run_id": sync_run_id}
+                                 for result in evaluation.results])
+            self._append_table(rows, "data_quality_results")
+
+    def persist_sync_report(self, report) -> None:
+        """Append every synchronization outcome instead of retaining only latest JSON."""
+        record = asdict(report) if is_dataclass(report) else dict(report)
+        for key, value in tuple(record.items()):
+            if isinstance(value, (dict, list, tuple)):
+                record[key] = json.dumps(value, sort_keys=True)
+        self._append_table(pd.DataFrame([record]), "sync_reports")
 
     def write_records(self, name: str, records: list[object]) -> Path:
         """Persist one of the canonical metadata/event tables with stable columns."""
