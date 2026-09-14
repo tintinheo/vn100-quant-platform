@@ -49,6 +49,20 @@ def test_distribution_exclusion_rules_and_checker_are_present():
     assert (ROOT / "scripts" / "check_distribution.py").is_file()
 
 
+def test_retired_provider_policy_checker_distinguishes_policy_text_from_runtime_use():
+    checker = ROOT / "scripts" / "check_retired_provider_policy.py"
+    result = subprocess.run(
+        [sys.executable, str(checker)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "permits documentation/tests" in result.stdout
+
+
 def test_pytest_discovery_is_pinned_to_active_tests():
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["pytest"]["ini_options"]
     assert config["testpaths"] == ["src/tests"]
