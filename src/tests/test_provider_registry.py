@@ -55,6 +55,7 @@ def complete_evidence(*, cross_validated: bool = True) -> AdmissionEvidence:
         raw_adjusted_policy="OHLC raw; adjusted close separately identified",
         revision_behavior="vendor revisions append immutable snapshots",
         quotas="120 requests/minute under LIC-2026-09",
+        history_depth="fixture range verified", universe_semantics="fixture membership verified",
         lineage_method="request metadata plus immutable payload SHA-256",
         validation_results=tuple(checks),
         owner="market-data owner",

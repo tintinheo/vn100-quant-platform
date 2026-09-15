@@ -44,6 +44,7 @@
 | **3.5.19** | **2026-09-15** | **Added fail-closed purged forward-validation reporting, independent strategy-family gates, full trial/placebo accounting and a no-capital shadow-state gate. No real-price validation ran because no provider is admitted; every strategy and forecast remains suppressed.** |
 | **3.5.20** | **2026-09-15** | **Hardened source synchronization so a multi-capability batch completes normalization and DQ before canonical publication, persisted consumer-facing report fields, and made app states explicit (`SYNCING`, `FRESH`, `DEGRADED_CACHED_DATA`, `STALE`, `FAILED`, `NO_ADMITTED_PROVIDER`). Offline tested only; admission/live-validation status is unchanged.** |
 | **3.5.21** | **2026-09-15** | **Repeated the standalone-artifact recovery audit and did not recover it from the checkout, reachable Git objects, or committed archives. Confirmed the stable packaged equivalent under `src/vnquant/` and added doctor regression coverage for fail-closed provider/configuration failures and resource cleanup. Full maintained suite: 126 passed offline; the historical standalone 10/10 claim remains withdrawn and no admission/live-validation status changed.** |
+| **3.5.22** | **2026-09-15** | **Moved provider roles, enablement, credential references and versioned admission records into packaged `providers.v1.yaml`; DNSE remains the enabled read-only candidate, while Vietstock and CafeF are disabled. Added history-depth and current-membership evidence gates. No provider was admitted or live validated.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1690,7 +1691,7 @@ inconsistent evidence is a hard stop. Synthetic/test providers, reference-only
 providers, undocumented sources, and incomplete authorized contracts cannot
 enter admission states.
 
-No provider can auto-promote itself because the endpoint returned HTTP 200.
+No provider can auto-promote itself because the endpoint returned HTTP 200. The packaged `providers.v1.yaml` is the versioned policy source for roles, enablement, non-secret credential references, and admission-record versions. DNSE remains `CANDIDATE` until schema/units, resolution/date semantics, VN100 filter/current membership, history depth, revisions and quotas are evidenced. Vietstock and CafeF remain disabled; CafeF is never primary or silent fallback.
 
 ## 25.3. Canonical-field routing `[GUESS]`
 

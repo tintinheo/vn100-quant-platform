@@ -73,6 +73,7 @@ def complete_evidence(provider) -> AdmissionEvidence:
         raw_adjusted_policy="raw",
         revision_behavior="immutable fixture response",
         quotas="local fixture only",
+        history_depth="fixture range verified", universe_semantics="fixture membership verified",
         lineage_method="SHA-256 raw snapshot",
         validation_results=(
             ValidationResult("doctor", True, "fixture-doctor", date(2026, 9, 14)),

@@ -17,6 +17,7 @@ def _registry(provider):
         capability_definitions={"daily_ohlcv": "bars", "current_index_members": "members"},
         schema_and_units="fixture schema in VND", timezone_date_semantics="UTC test dates",
         raw_adjusted_policy="raw", revision_behavior="immutable files", quotas="local",
+        history_depth="fixture range verified", universe_semantics="fixture membership verified",
         lineage_method="SHA-256", owner="tests", reviewed_at=date(2026, 9, 14),
         next_review_at=date(2027, 9, 14), validation_results=(
             ValidationResult("doctor", True, "test", date(2026, 9, 14)),

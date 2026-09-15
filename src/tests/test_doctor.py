@@ -38,6 +38,7 @@ def _admitted(provider: MarketDataProvider) -> ProviderRegistry:
         raw_adjusted_policy="raw",
         revision_behavior="fixture snapshots",
         quotas="fixture quota",
+        history_depth="fixture range verified", universe_semantics="fixture membership verified",
         lineage_method="fixture hash",
         validation_results=(
             ValidationResult("doctor", True, "fixture-doctor", date(2026, 9, 15)),

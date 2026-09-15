@@ -44,6 +44,7 @@
 | **3.5.19** | **2026-09-15** | **Implemented purged forward-fold construction and independent family reports with execution, stability, calibration, placebo, honest-trial and shadow-state gates. No admitted real dataset exists, so no empirical validation or shadow period has begun.** |
 | **3.5.20** | **2026-09-15** | **Completed batch-level DQ-before-publication behavior, atomic Parquet replacement, persisted `data_as_of`/`last_sync_at`/`rows_written` report fields, and explicit Streamlit synchronization/data-state rendering. Offline tested only; admission/live-validation status is unchanged.** |
 | **3.5.21** | **2026-09-15** | **Repeated artifact recovery across the checkout, reachable Git objects, and committed archives without finding the standalone source. Reconfirmed the installable `src/vnquant/` provider/orchestrator/cache/DQ/doctor implementation and added a doctor regression proving expected provider/configuration failures return a controlled failure and close the provider. Full suite: 126 passed offline; standalone 10/10 remains withdrawn and no admission/live-validation status changed.** |
+| **3.5.22** | **2026-09-15** | **Implemented schema/version-checked `providers.v1.yaml`, versioned admission records, environment/approved-secret-store DNSE credential resolution, disabled-provider promotion blocking, and explicit DNSE history/current-membership evidence gates. Offline tested only; admission/live-validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -524,8 +525,12 @@ policy, revision behavior, quotas, lineage, validation results, owner, and
 ordered review dates. Legal transitions are `CANDIDATE -> DOCTOR_PASSED ->
 CROSS_VALIDATED -> ADMITTED`, active-state transitions to
 `SUSPENDED`/`RETIRED`, `SUSPENDED -> CANDIDATE|RETIRED`, and `RESEARCH_ONLY ->
-RETIRED`; all others fail closed. Contract completeness and real-data/provider
-role eligibility are checked before promotion.
+RETIRED`; all others fail closed. Contract completeness, provider enablement, and real-data/provider
+role eligibility are checked before promotion. The packaged, schema-checked
+`vnquant/config/providers.v1.yaml` supplies provider roles, enablement, non-secret
+credential references, configuration version, and admission-record version. DNSE
+credentials resolve lazily from environment variables or an injected approved
+secret store; secret values are never persisted in this configuration.
 
 ## 6.1B. Provider fallback is explicit, never silent `[GUESS]`
 

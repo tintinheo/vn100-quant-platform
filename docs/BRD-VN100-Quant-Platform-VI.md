@@ -43,6 +43,7 @@
 | **3.5.19** | **2026-09-15** | **Thêm reporting purged forward-validation fail-closed, gate riêng từng strategy family, accounting đầy đủ trials/placebo và gate shadow không dùng vốn. Chưa chạy validation giá thật vì chưa có provider admitted; mọi strategy/forecast vẫn suppressed.** |
 | **3.5.20** | **2026-09-15** | **Siết source synchronization để toàn bộ batch đa capability hoàn tất normalization và DQ trước khi publish canonical, persist các field report cho consumer, và hiển thị rõ `SYNCING`, `FRESH`, `DEGRADED_CACHED_DATA`, `STALE`, `FAILED`, `NO_ADMITTED_PROVIDER`. Chỉ offline-tested; admission/live-validation không đổi.** |
 | **3.5.21** | **2026-09-15** | **Lặp lại audit khôi phục standalone artifact nhưng không tìm thấy trong checkout, Git object có thể truy cập hoặc archive đã commit. Xác nhận implementation tương đương được package ổn định dưới `src/vnquant/` và thêm regression test cho doctor fail-closed khi provider/configuration lỗi cùng việc đóng resource. Full maintained suite: 126 passed offline; claim standalone 10/10 lịch sử vẫn bị rút lại và không thay đổi admission/live-validation.** |
+| **3.5.22** | **2026-09-15** | **Chuyển role, enablement, credential reference và admission record có version của provider vào `providers.v1.yaml`; DNSE vẫn là read-only candidate được bật, Vietstock và CafeF bị tắt. Thêm gate evidence về history depth và current membership. Không provider nào được admitted/live validated.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1116,7 +1117,7 @@ schema và units, timezone/trading-date semantics, raw-versus-adjusted policy,
 revision behavior, quotas, lineage method, validation results có evidence
 reference, owner và ngày review/next review. Evidence thiếu/mâu thuẫn,
 synthetic/test provider, reference-only/undocumented source hoặc authorized
-contract chưa đầy đủ đều bị fail closed trước admission.
+contract chưa đầy đủ đều bị fail closed trước admission. `providers.v1.yaml` là nguồn policy có version cho role, enablement, credential reference không chứa secret và admission-record version. DNSE vẫn là `CANDIDATE` cho đến khi đủ live evidence; Vietstock và CafeF vẫn disabled, và CafeF không bao giờ là primary/silent fallback.
 
 HTTP 200 không đồng nghĩa provider được admitted.
 

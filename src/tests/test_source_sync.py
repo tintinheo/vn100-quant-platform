@@ -75,6 +75,7 @@ def registry_for(provider):
         timezone_date_semantics="Asia/Ho_Chi_Minh exchange date",
         raw_adjusted_policy="raw", revision_behavior="immutable test snapshots",
         quotas="test quota", lineage_method="test payload hash", owner="test owner",
+        history_depth="fixture range verified", universe_semantics="fixture membership verified",
         reviewed_at=date(2026, 9, 14), next_review_at=date(2027, 9, 14),
         validation_results=(
             ValidationResult("doctor", True, "test-doctor", date(2026, 9, 14)),
