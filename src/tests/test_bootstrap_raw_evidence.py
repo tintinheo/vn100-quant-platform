@@ -64,4 +64,6 @@ def test_csv_fetch_does_not_normalize_or_mutate_raw_bytes(tmp_path):
     fetched = CSVProvider(tmp_path).fetch_daily_history(
         "AAA", date(2026, 9, 14), date(2026, 9, 14))
     assert fetched.payload == payload
-    assert hashlib.sha256(fetched.payload).hexdigest() == hashlib.sha256(payload).hexdigest()
+    digest = hashlib.sha256(payload).hexdigest()
+    assert fetched.payload_sha256 == digest
+    assert fetched.request_parameters["file_sha256"] == digest

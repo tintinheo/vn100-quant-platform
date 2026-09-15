@@ -22,7 +22,7 @@ from decimal import Decimal
 import pandas as pd
 
 from .base import DataMode
-from .models import CanonicalBar, IndexBar, RawSnapshot
+from .models import CanonicalBar, IndexBar, RawSnapshot, UniverseMembership
 from .provider_registry import ProviderRegistry, default_provider_registry
 from .quality import DataQualityService, validate_bars
 from .storage import Warehouse
@@ -221,7 +221,7 @@ class SourceSyncOrchestrator:
     def _accepted_cache(self, report: SyncReport | None) -> bool:
         return bool(report and report.provider_id and report.last_successful_sync
                     and report.last_accepted_market_date and report.dq_status in {"PASS", "WARN"}
-                    and any((self.data_dir / "parquet" / "bars").glob("*.parquet")))
+                    and (self.data_dir / "parquet" / "canonical_bars.parquet").exists())
 
     def _freshness_key(self, required: tuple[str, ...], expected: date,
                        providers: Mapping[str, str], watermarks: Mapping[str, ProviderWatermark]) -> str:
@@ -278,6 +278,7 @@ class SourceSyncOrchestrator:
 
         ranges, snapshots, changes, dq, dq_scores = {}, [], {}, {}, []
         pending_members: pd.DataFrame | None = None
+        pending_memberships: list[UniverseMembership] = []
         pending_bars: list[tuple[str, pd.DataFrame, list[CanonicalBar]]] = []
         pending_index: list[IndexBar] = []
         provider_objects = {}
@@ -299,7 +300,14 @@ class SourceSyncOrchestrator:
                     snapshot = self._store_fetch(raw)
                     snapshots.append(snapshot.snapshot_id)
                     members = provider.normalize_index_members(raw)
-                    master = pd.DataFrame({"symbol": members, "index_code": "VN100", "provider": provider_id})
+                    pending_memberships = [UniverseMembership(
+                        "VN100", symbol, expected, None, provider_id, snapshot.snapshot_id
+                    ) for symbol in members]
+                    master = pd.DataFrame([{
+                        "symbol": record.symbol, "index_code": record.index_code,
+                        "provider": record.source,
+                        "source_snapshot_id": record.source_snapshot_id,
+                    } for record in pending_memberships])
                     pending_members = master
                     changes[capability] = len(master)
                     dq[capability] = "PASS" if members else "FAIL"
@@ -365,11 +373,11 @@ class SourceSyncOrchestrator:
             # accepted revision while this publication block is in progress.
             warehouse = Warehouse(self.data_dir)
             if pending_members is not None:
+                warehouse.write_records("universe_current", pending_memberships)
                 warehouse.write_table(pending_members, "security_master")
-            for symbol, frame, canonical in pending_bars:
+            for _, _, canonical in pending_bars:
                 if canonical:
                     warehouse.append_canonical_bars(canonical)
-                self._merge_bars(frame, symbol)
             if pending_index:
                 warehouse.append_index_bars(pending_index)
             self._write_json(self.watermark_path, {k: asdict(v) for k, v in watermarks.items()})
@@ -439,23 +447,17 @@ class SourceSyncOrchestrator:
             raise RuntimeError("current_index_members cache is unavailable")
         return sorted(pd.read_parquet(table).symbol.astype(str).str.upper().unique())
 
-    def _merge_bars(self, incoming: pd.DataFrame, symbol: str) -> int:
-        wh, path = Warehouse(self.data_dir), self.data_dir / "parquet" / "bars" / f"{symbol.upper()}.parquet"
-        old = pd.read_parquet(path) if path.exists() else pd.DataFrame()
-        combined = pd.concat([old, incoming], ignore_index=True) if not old.empty else incoming.copy()
-        keys = [c for c in ("symbol", "trading_date", "provider") if c in combined]
-        combined = combined.drop_duplicates(keys, keep="last").sort_values("trading_date")
-        changed = len(combined) - len(old)
-        wh.write_bars(combined, symbol)
-        return max(0, changed)
-
     def _merged_bar_count(self, incoming: pd.DataFrame, symbol: str) -> int:
-        """Calculate an incremental write count without publishing data."""
-        path = self.data_dir / "parquet" / "bars" / f"{symbol.upper()}.parquet"
-        old = pd.read_parquet(path) if path.exists() else pd.DataFrame()
-        combined = pd.concat([old, incoming], ignore_index=True) if not old.empty else incoming.copy()
-        keys = [column for column in ("symbol", "trading_date", "provider") if column in combined]
-        return max(0, len(combined.drop_duplicates(keys, keep="last")) - len(old))
+        """Calculate new canonical observations without publishing compatibility bars."""
+        path = self.data_dir / "parquet" / "canonical_bars.parquet"
+        if not path.exists():
+            return len(incoming)
+        existing = pd.read_parquet(path)
+        provider = str(incoming.provider.iloc[0]) if not incoming.empty else ""
+        keys = set(zip(existing.symbol.astype(str), pd.to_datetime(existing.timestamp).dt.date,
+                       existing.provider.astype(str)))
+        return sum((str(row.symbol), row.trading_date, provider) not in keys
+                   for row in incoming.itertuples())
 
     def _failure_report(self, started, previous, accepted, expected, providers, reason, key,
                         *, fetched, ranges=None, snapshots=None):

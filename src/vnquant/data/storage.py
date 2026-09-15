@@ -6,7 +6,7 @@ import pandas as pd
 
 from dataclasses import asdict, is_dataclass
 
-from .models import CanonicalBar, IndexBar, RawSnapshot
+from .models import CanonicalBar, IndexBar, RawSnapshot, SectorMembership, UniverseMembership
 from .quality import DataQualityService
 
 class Warehouse:
@@ -33,6 +33,22 @@ class Warehouse:
             meta_path.write_text(json.dumps(meta,ensure_ascii=False,indent=2),encoding="utf-8")
         return out
 
+    def _raw_snapshot_metadata(self, provider: str, snapshot_id: str) -> dict:
+        matches = list((self.raw / provider).glob(f"{snapshot_id}.*.bin"))
+        if not matches:
+            raise ValueError(f"unknown raw_snapshot_id: {snapshot_id}")
+        if len(matches) != 1:
+            raise ValueError(f"ambiguous raw_snapshot_id: {snapshot_id}")
+        metadata_path = matches[0].with_suffix(matches[0].suffix + ".json")
+        if not metadata_path.exists():
+            raise ValueError(f"raw snapshot metadata is missing: {snapshot_id}")
+        metadata = json.loads(metadata_path.read_text("utf-8"))
+        if metadata.get("snapshot_id") != snapshot_id or metadata.get("provider") != provider:
+            raise ValueError(f"raw snapshot identity mismatch: {snapshot_id}")
+        if hashlib.sha256(matches[0].read_bytes()).hexdigest() != metadata.get("payload_sha256"):
+            raise ValueError(f"raw snapshot hash mismatch: {snapshot_id}")
+        return metadata
+
     def append_canonical_bars(self, bars: list[CanonicalBar]) -> Path:
         """Append validated observations; conflicting providers remain separate rows."""
         evaluation=DataQualityService().evaluate(bars)
@@ -41,10 +57,7 @@ class Warehouse:
         if failures:
             raise ValueError("DUPLICATE_BAR: duplicate canonical observations in batch")
         for bar in bars:
-            matches=list((self.raw/bar.provider).glob(f"{bar.raw_snapshot_id}.*.bin"))
-            if not matches:
-                raise ValueError(f"unknown raw_snapshot_id: {bar.raw_snapshot_id}")
-            metadata=json.loads(matches[0].with_suffix(matches[0].suffix+".json").read_text("utf-8"))
+            metadata = self._raw_snapshot_metadata(bar.provider, bar.raw_snapshot_id)
             expected={"payload_sha256":bar.payload_sha256,"adapter_version":bar.adapter_version,
                       "trust_tier":bar.trust_tier,"raw_price_unit":bar.raw_price_unit,
                       "price_semantics":bar.price_semantics,"source_reference":bar.source_reference}
@@ -81,10 +94,7 @@ class Warehouse:
         if not bars:
             raise ValueError("index bars must not be empty")
         for bar in bars:
-            matches = list((self.raw/bar.provider).glob(f"{bar.raw_snapshot_id}.*.bin"))
-            if not matches:
-                raise ValueError(f"unknown raw_snapshot_id: {bar.raw_snapshot_id}")
-            metadata = json.loads(matches[0].with_suffix(matches[0].suffix+".json").read_text("utf-8"))
+            metadata = self._raw_snapshot_metadata(bar.provider, bar.raw_snapshot_id)
             if bar.payload_sha256 != "unknown" and metadata.get("payload_sha256") != bar.payload_sha256:
                 raise ValueError(f"index lineage does not match raw snapshot: {bar.raw_snapshot_id}")
         incoming = pd.DataFrame([_record_dict(bar) for bar in bars])
@@ -132,10 +142,14 @@ class Warehouse:
         return self._append_table(decisions, "portfolio_risk_decisions")
 
     def write_records(self, name: str, records: list[object]) -> Path:
-        """Persist one of the canonical metadata/event tables with stable columns."""
+        """Persist canonical records, enforcing raw evidence for governed reference data."""
         if not records or any(not is_dataclass(record) for record in records):
             raise ValueError("records must be a non-empty list of dataclass instances")
-        return self.write_table(pd.DataFrame([_record_dict(record) for record in records]),name)
+        lineaged = (UniverseMembership, SectorMembership)
+        for record in records:
+            if isinstance(record, lineaged):
+                self._raw_snapshot_metadata(record.source, record.source_snapshot_id)
+        return self.write_table(pd.DataFrame([_record_dict(record) for record in records]), name)
 
     def _append_table(self, incoming: pd.DataFrame, name: str) -> Path:
         table=self.parquet/f"{name}.parquet"
@@ -146,7 +160,10 @@ class Warehouse:
     def store_raw_snapshot(self, snapshot: RawSnapshot) -> Path:
         """Persist a pre-built snapshot without allowing its evidence to mutate."""
         p=self.raw/snapshot.provider; p.mkdir(parents=True,exist_ok=True)
+        existing = list(p.glob(f"{snapshot.snapshot_id}.*.bin"))
         out=p/f"{snapshot.snapshot_id}.{snapshot.payload_sha256[:12]}.bin"
+        if existing and out not in existing:
+            raise RuntimeError("immutable raw snapshot id already identifies different payload")
         if out.exists():
             if out.read_bytes() != snapshot.payload:
                 raise RuntimeError("immutable raw snapshot already exists with different payload")

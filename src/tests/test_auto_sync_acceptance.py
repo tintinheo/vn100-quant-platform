@@ -236,7 +236,7 @@ def test_sync_is_idempotent_for_same_freshness_state(tmp_path):
     client = FakeDNSESDK()
     first = orchestrator(tmp_path, client).sync()
     second = orchestrator(tmp_path, client).sync()
-    bars = pd.read_parquet(tmp_path / "parquet" / "bars" / "AAA.parquet")
+    bars = pd.read_parquet(tmp_path / "parquet" / "canonical_bars.parquet")
     canonical = pd.read_parquet(tmp_path / "parquet" / "canonical_bars.parquet")
     assert first.run_id == second.run_id
     assert len(bars) == len(canonical) == 1
