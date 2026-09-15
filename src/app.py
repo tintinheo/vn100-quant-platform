@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 from vnquant.data.source_sync import SourceSyncOrchestrator
 from vnquant.data.provider_registry import default_provider_registry
+from vnquant.ui_status import synchronization_status_view
 
 def run_startup_sync(data_dir="data", orchestrator=None, *, force=False):
     # Streamlit's managed secret store is the only UI-side alternative to
@@ -15,28 +16,12 @@ def run_startup_sync(data_dir="data", orchestrator=None, *, force=False):
 
 def display_sync_state(report):
     """Render one unambiguous application data state."""
-    if report.status == "NO_ADMITTED_PROVIDER":
-        state = "NO_ADMITTED_PROVIDER"
-    elif report.mode == "DEGRADED_CACHED_DATA":
-        state = "DEGRADED_CACHED_DATA"
-    elif report.mode == "STALE" or report.status == "CACHE_STALE":
-        state = "STALE"
-    elif report.mode == "FAILED" or report.status == "SYNC_FAILED":
-        state = "FAILED"
-    else:
-        state = "FRESH"
-    message = (f"{state} — provider: {report.provider_id or 'none'}; "
-               f"data as of: {report.data_as_of or 'unavailable'}; "
-               f"last sync: {report.last_sync_at or 'never'}; DQ: {report.dq_status}")
-    if state == "FRESH":
-        st.success(message)
-    elif state == "DEGRADED_CACHED_DATA":
-        st.warning(message)
-    elif state == "STALE":
-        st.warning(message)
-    else:
-        st.error(message)
-    return state
+    view = synchronization_status_view(report)
+    getattr(st, view.severity)(view.primary_message)
+    st.caption(view.details)
+    if view.next_action:
+        st.info(f"Next action: {view.next_action}")
+    return view.state
 
 st.set_page_config(page_title="VNQuant v3.3",layout="wide")
 st.title("VNQuant v3.3 — SSI-Free Viewer")
