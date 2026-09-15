@@ -23,6 +23,11 @@ class Candidate:
     reason: str
     confidence: float
     actionable: bool
+    sector: str
+    correlated_group: str
+    entry_price: float | None
+    risk_stop: float | None
+    adv_shares: float | None
 
 def detect_candidates(latest: pd.DataFrame, regime: Regime, sector_scores: pd.DataFrame,
                       *, dq_score: int | None = None, dq_actionable: bool = True) -> pd.DataFrame:
@@ -65,6 +70,9 @@ def detect_candidates(latest: pd.DataFrame, regime: Regime, sector_scores: pd.Da
         score = min(score_max, float(score))
         confidence, threshold_actionable = apply_dq_policy(score, dq_score)
         actionable = bool(dq_actionable and threshold_actionable)
+        sector = str(r.get("sector", "UNKNOWN"))
         rows.append(asdict(Candidate(str(r.symbol), r.trading_date, family.value, score,
-            long_rank, short_rank, sector_score, "; ".join(reason), confidence, actionable)))
+            long_rank, short_rank, sector_score, "; ".join(reason), confidence, actionable,
+            sector, str(r.get("correlated_group", sector)), r.get("entry_price"),
+            r.get("risk_stop"), r.get("adv_shares"))))
     return pd.DataFrame(rows).sort_values("score",ascending=False).reset_index(drop=True) if rows else pd.DataFrame(columns=Candidate.__dataclass_fields__)

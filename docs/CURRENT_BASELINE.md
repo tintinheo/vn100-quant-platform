@@ -66,6 +66,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 
 | **3.5 (PIT reference-data governance)** | **2026-09-14** | **Added official-review snapshot ingestion, effective-dated sector taxonomy, and strict historical-backtest/capital-qualification gates. Offline tested only; no live-validation/admission change.** |
 | **3.5 (official-index regime input)** | **2026-09-14** | **Added canonical lineaged official-index OHLC/turnover ingestion and independent dual-index regime inputs; absent/stale official data now emits a degraded non-bull state. Offline tested only; no live-validation/admission change.** |
+| **3.5 (portfolio-risk gate)** | **2026-09-14** | **Added versioned, fail-closed portfolio-risk sizing/constraints and auditable pre-publication decisions. Offline tested only; no live-data/provider-admission change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

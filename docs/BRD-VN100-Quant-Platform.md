@@ -40,6 +40,8 @@
 | **3.5.16** | **2026-09-14** | **Implemented effective-dated official VN100 review ingestion and source-snapshot lineage, a versioned effective-dated sector taxonomy, and fail-closed backtest naming/capital-qualification rules. Offline tested only; no live-data/provider-admission change.** |
 | **3.5.17** | **2026-09-14** | **Required canonical, raw-snapshot-lineaged VN-Index/VN100 OHLC and turnover for the cap-weighted regime leg. An absent or stale official series is an explicit degraded proxy state and may not produce either bull regime. Offline tested only; provider admission/live validation unchanged.** |
 
+| **3.5.18** | **2026-09-14** | **Added a fail-closed portfolio-risk approval stage after recommendation construction and before publication, with cost-aware lot sizing, portfolio/regime constraints, and persisted accepted/resized/rejected decisions. Defaults remain `[D] [GUESS]`; offline tested only.** |
+
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
 ---
@@ -2037,3 +2039,12 @@ Official VN100 review evidence is ingested as immutable, content-addressed raw e
 The sector taxonomy carries `symbol`, `sector_code`, `sector_name`, `taxonomy_version`, `effective_from`, `effective_to`, `source`, and `source_snapshot_id`. Historical joins propagate taxonomy and snapshot lineage. A missing PIT classification may remain an explicitly warned current-sector proxy for exploratory work only.
 
 Any output named a **historical VN100 backtest** requires `STRICT_PIT` universe mode. `CURRENT_UNIVERSE_PROXY` and current-sector proxy runs retain prominent leakage warnings and are categorically `NOT_ELIGIBLE_FOR_REAL_CAPITAL_STRATEGY_QUALIFICATION`. Capital-qualification eligibility requires both PIT universe and PIT sector modes; this is a governance eligibility gate, not evidence that a strategy is profitable or otherwise qualified.
+
+
+## 16.1. Pre-publication portfolio-risk approval (2026-09-14)
+
+Every constructed recommendation passes through portfolio-risk approval before publication. Position quantity is rounded down to the configured lot after accounting for account equity, the entry-to-risk-stop loss, round-trip costs, and the owner-supplied maximum permitted loss. Ranked recommendations reserve capacity sequentially; signal score never increases size.
+
+The service enforces versioned `[D] [GUESS]` limits for total exposure, concurrent positions, sector concentration, correlated-group count/exposure, ADV participation, total open risk, per-security exposure, cash, and regime-specific exposure/risk multipliers. Missing/invalid account state, entry, risk stop or ADV fails closed. A recommendation is rejected when its stop distance is outside configured bounds or when every applicable ceiling cannot support the minimum lot/minimum viable notional.
+
+Every outcome is an immutable decision event with `ACCEPTED`, `RESIZED`, or `REJECTED`, quantity, estimated maximum loss/notional, binding constraint, decision timestamp/ID, regime and exact configuration version. Only accepted/resized recommendations may be published as actionable; rejected rows remain in the audit dataset. These offline mechanics are not alpha, provider admission, or real-data validation evidence.

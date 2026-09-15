@@ -40,6 +40,8 @@
 | **3.5.16** | **2026-09-14** | **Implemented immutable official-review CSV evidence ingestion into effective-dated VN100 records, the canonical sector-taxonomy store and PIT lineage propagation, plus an executable historical-backtest/capital-qualification governance contract. Offline tested only.** |
 | **3.5.17** | **2026-09-14** | **Implemented canonical official-index OHLC/turnover ingestion with immutable raw lineage, independent cap/equal-weight pipeline inputs, explicit absent/stale proxy status, and divergence regressions. Offline tested only; admission/live validation unchanged.** |
 
+| **3.5.18** | **2026-09-14** | **Implemented the post-recommendation/pre-publication portfolio-risk service, sequential capacity reservation, cost/stop/lot/loss sizing, configured portfolio/regime ceilings, decision persistence, and fail-closed rejection coverage. Offline tested only.** |
+
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
 ---
@@ -2220,3 +2222,12 @@ Official VN100 review evidence is ingested as immutable, content-addressed raw e
 The sector taxonomy carries `symbol`, `sector_code`, `sector_name`, `taxonomy_version`, `effective_from`, `effective_to`, `source`, and `source_snapshot_id`. Historical joins propagate taxonomy and snapshot lineage. A missing PIT classification may remain an explicitly warned current-sector proxy for exploratory work only.
 
 Any output named a **historical VN100 backtest** requires `STRICT_PIT` universe mode. `CURRENT_UNIVERSE_PROXY` and current-sector proxy runs retain prominent leakage warnings and are categorically `NOT_ELIGIBLE_FOR_REAL_CAPITAL_STRATEGY_QUALIFICATION`. Capital-qualification eligibility requires both PIT universe and PIT sector modes; this is a governance eligibility gate, not evidence that a strategy is profitable or otherwise qualified.
+
+
+# 35. PORTFOLIO-RISK SERVICE
+
+`vnquant.portfolio.PortfolioRiskService` executes synchronously between `detect_candidates` and warehouse/CSV publication. It accepts a ranked recommendation frame plus an explicit `PortfolioContext` containing account equity, cash, maximum permitted loss, costs and current positions. It must never obtain brokerage credentials or route orders.
+
+For each row, the service validates entry, stop, configured stop-distance bounds and measured ADV; computes loss per share including buy/sell rates; applies the lower of the owner loss limit and configured regime-adjusted risk budget; rounds down to the configured lot; and applies cash, per-security, total exposure, sector, correlated group, ADV participation and total-open-risk ceilings. Accepted quantities reserve capacity before the next ranked row is evaluated. Missing inputs and quantities below lot/minimum notional reject rather than fabricate values.
+
+All decision states are appended to `portfolio_risk_decisions` before actionable candidates are written. The public candidate artifact is an inner join to `ACCEPTED`/`RESIZED` decisions; the audit artifact retains rejections. Each decision stores a UUID, UTC decision time, binding constraint and `parameters_version()`. Parameters are governed in the packaged registry and all uncalibrated limits remain literal `[D] [GUESS]`. Tests must cover sizing/cost/rounding, rejection inputs, each portfolio constraint class, regime limits, sequential reservation and persistence/publication ordering.

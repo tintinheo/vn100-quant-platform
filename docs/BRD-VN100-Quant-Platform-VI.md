@@ -1429,3 +1429,12 @@ Bằng chứng review VN100 chính thức phải được lưu raw immutable/con
 Taxonomy ngành giữ `symbol`, `sector_code`, `sector_name`, `taxonomy_version`, `effective_from`, `effective_to`, `source`, và `source_snapshot_id`. Join lịch sử phải truyền lineage taxonomy/snapshot. Thiếu phân loại PIT chỉ được dùng current-sector proxy có cảnh báo cho exploratory work.
 
 Mọi output mang tên **historical VN100 backtest** bắt buộc dùng universe `STRICT_PIT`. Run `CURRENT_UNIVERSE_PROXY` hoặc current-sector proxy phải giữ cảnh báo leakage và luôn `NOT_ELIGIBLE_FOR_REAL_CAPITAL_STRATEGY_QUALIFICATION`. Muốn có eligibility để qualification cần cả universe và sector PIT; eligibility này không chứng minh strategy profitable hay đã qualified.
+
+
+## 35. Phê duyệt portfolio-risk trước publication (2026-09-14)
+
+Mọi recommendation đã dựng phải qua portfolio-risk trước publication. Quantity được làm tròn xuống theo lot cấu hình sau khi tính account equity, loss từ entry đến risk stop, round-trip costs và maximum permitted loss do chủ tài khoản cung cấp. Recommendation theo thứ hạng giữ capacity tuần tự; signal score không được làm tăng size.
+
+Service áp dụng limit versioned `[D] [GUESS]` cho total exposure, concurrent positions, sector concentration, số lượng/exposure của correlated group, ADV participation, total open risk, per-security exposure, cash và multiplier exposure/risk theo regime. Thiếu/sai account state, entry, risk stop hoặc ADV phải fail closed. Recommendation bị reject nếu stop-distance ngoài biên hoặc các ceiling không đủ minimum lot/minimum viable notional.
+
+Mọi kết quả được lưu thành decision event `ACCEPTED`, `RESIZED` hoặc `REJECTED`, kèm quantity, estimated loss/notional, binding constraint, timestamp/ID, regime và configuration version chính xác. Chỉ accepted/resized mới được publish actionable; rejected vẫn nằm trong audit dataset. Offline mechanics không chứng minh alpha, provider admission hoặc real-data validation.
