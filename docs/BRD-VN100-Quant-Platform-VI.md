@@ -46,6 +46,7 @@
 | **3.5.22** | **2026-09-15** | **Chuyển role, enablement, credential reference và admission record có version của provider vào `providers.v1.yaml`; DNSE vẫn là read-only candidate được bật, Vietstock và CafeF bị tắt. Thêm gate evidence về history depth và current membership. Không provider nào được admitted/live validated.** |
 | **3.5.23** | **2026-09-15** | **Bắt buộc một source snapshot bất biến cho mọi record giá, current-universe, official-index, sector metadata và authorized manual import được chấp nhận. Provider call giữ raw response/request metadata, canonical bars là kho ingestion giá duy nhất, và raw lineage thiếu hoặc không rõ ràng bị fail closed. Full suite: 131 passed offline; admission/live-validation không đổi.** |
 | **3.5.24** | **2026-09-15** | **Bắt buộc SyncReport được chấp nhận và gắn với một canonical revision trước feature/candidate; kiểm tra lại admission/session/age/lineage/DQ tại consumer và truyền trạng thái governance vào market/candidate artifacts. Chỉ offline-tested; admission/live-validation không đổi.** |
+| **3.5.25** | **2026-09-15** | **Implement contract recommendation fail-closed đầy đủ: attempt date tương lai; gate tick/band/gap/liquidity/cost/lot/settlement/portfolio; payoff sau cost; trạng thái DQ/forecast và source lineage bất biến. Chỉ offline-tested; strategy/forecast vẫn suppressed khi chưa có dữ liệu thật admitted.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1468,3 +1469,8 @@ chỉ kiểm tra contract, không phải bằng chứng backtest hoặc alpha.
 # 37. GATE ĐỒNG BỘ TRƯỚC ANALYTICS (2026-09-15)
 
 Tính feature và dựng candidate bắt buộc có `SyncReport` được chấp nhận, gắn đúng canonical revision đang đọc. Consumer phải kiểm tra lại provider admission, độ đầy đủ/tuổi expected session, raw lineage bất biến, trạng thái universe/sector/corporate action, ngưỡng DQ blocking và reconciliation/disagreement. Thiếu hoặc sai evidence phải fail closed và xóa candidate artifact. Khi policy cho phép degraded cache, confidence cap phải được công bố rõ; không silent fallback hoặc average giá bất đồng. `market.json` và từng candidate row phải chứa trạng thái provider, synchronization, DQ, universe, sector, corporate action, lineage, canonical revision và reconciliation.
+
+
+# 38. CONTRACT KHUYẾN NGHỊ ACTIONABLE (2026-09-15)
+
+Recommendation actionable phải có setup, signal date và attempt date tương lai, entry zone/trigger, technical stop và risk stop, invalidation, targets, reward-to-risk và expected value sau costs, position size theo NAV, execution feasibility, confidence, forecast/DQ status và source lineage. Planned entry limit chỉ là chỉ dẫn cho lần thử tương lai, không phải fill; `fill_price` phải null cho đến khi execution evidence của phiên attempt chứng minh riêng. Mọi gate về tick/band của sàn, gap cấu hình, liquidity/ADV, lot, round-trip cost, settlement calendar, strategy validation, forecast, DQ và portfolio risk đều fail closed. Thiếu hoặc fail bất kỳ gate nào phải trả `NO_ACTIONABLE_RECOMMENDATION`.

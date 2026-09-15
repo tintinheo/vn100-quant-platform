@@ -47,6 +47,7 @@
 | **3.5.22** | **2026-09-15** | **Implemented schema/version-checked `providers.v1.yaml`, versioned admission records, environment/approved-secret-store DNSE credential resolution, disabled-provider promotion blocking, and explicit DNSE history/current-membership evidence gates. Offline tested only; admission/live-validation unchanged.** |
 | **3.5.23** | **2026-09-15** | **Enforced raw-snapshot existence, identity, hash and metadata checks at canonical/reference writes; persisted current membership with snapshot IDs; made canonical bars the only ingested price store and derived pipeline inputs from it; and recorded exact authorized-file hashes in import request metadata. Full suite: 131 passed offline; admission/live-validation unchanged.** |
 | **3.5.24** | **2026-09-15** | **Added a pre-feature consumer gate for accepted `SyncReport`/canonical revision and complete governance-status publication on market/candidate artifacts. Offline tested only; admission/live-validation unchanged.** |
+| **3.5.25** | **2026-09-15** | **Added `vnquant.recommendations.service` as a strict publication boundary with complete recommendation fields and fail-closed data/strategy/forecast/DQ/execution/risk gates. Offline tested only; no provider admission/live-validation change.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2265,3 +2266,8 @@ the real-data validation and shadow-operating stages have not run.
 # 37. PRE-FEATURE SYNC-REVISION CONTRACT
 
 `jobs.pipeline.run` shall not call feature, market, sector, recommendation, or risk calculations until its `SyncReport` is accepted and its `canonical_revision` exists in canonical bars. The consumer gate independently checks the current registry admission, expected-session date and age, raw snapshot lineage, DQ score/status, universe state, sector state, corporate-action state, and reconciliation/provider-disagreement state. A failed check publishes a non-actionable `market.json`, deletes older candidate artifacts, and performs no feature work. Accepted output decorates `market.json` and every candidate row with all gate statuses and the sync run/revision identifiers. A confidence cap is explicit only for policy-permitted degraded-cache execution.
+
+
+# 38. RECOMMENDATION PUBLICATION SERVICE
+
+`vnquant.recommendations.build_recommendation` accepts an explicit request and `PortfolioContext`. It selects the first calendar session strictly after the signal, tick-rounds a planned limit, checks the HOSE band, optional attempt-bar gap/conservative fill feasibility, ADV, configured costs, lot sizing and all portfolio ceilings, then derives settlement dates and cost-adjusted payoff metrics. It publishes the complete contract only after strategy, available forecast, DQ and lineage gates pass. Attempt-bar feasibility never populates `fill_price`; actual fills remain execution audit events. Every malformed, unavailable or rejected dependency returns `NO_ACTIONABLE_RECOMMENDATION` with a machine-readable reason.
