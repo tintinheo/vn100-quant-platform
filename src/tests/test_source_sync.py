@@ -282,6 +282,30 @@ def test_report_persists_public_sync_field_names(tmp_path):
     assert report.last_sync_at == persisted["last_sync_at"]
     assert report.rows_written == persisted["rows_written"] == report.canonical_rows_written
     assert persisted["raw_snapshot_ids"]
+    assert report.canonical_revision == persisted["canonical_revision"]
+    bars = pd.read_parquet(tmp_path / "parquet" / "canonical_bars.parquet")
+    assert set(bars.canonical_revision) == {report.canonical_revision}
+
+
+def test_pipeline_blocks_mismatched_canonical_revision_before_features(tmp_path, monkeypatch):
+    sync = SourceSyncOrchestrator(
+        tmp_path, registry=registry_for(CountingProvider()),
+        today=lambda: date(2026, 9, 14),
+    )
+    report = sync.sync()
+    persisted = json.loads(sync.report_path.read_text(encoding="utf-8"))
+    persisted["canonical_revision"] = "not-the-published-revision"
+    sync.report_path.write_text(json.dumps(persisted), encoding="utf-8")
+
+    def features_must_not_run(_):
+        raise AssertionError("features ran before the synchronization gate")
+
+    monkeypatch.setattr("vnquant.jobs.pipeline.add_baseline_features", features_must_not_run)
+    result = run_pipeline(str(tmp_path), str(tmp_path / "publish"), sync_orchestrator=sync)
+
+    assert result["block_reason"] == "SYNC_REPORT_NOT_ACCEPTABLE"
+    assert result["canonical_revision_status"] == "MISSING_OR_MISMATCHED"
+    assert not (tmp_path / "publish" / "candidates.csv").exists()
 
 
 def test_failed_batch_does_not_publish_partially_accepted_canonical_data(tmp_path):

@@ -49,9 +49,9 @@ class Warehouse:
             raise ValueError(f"raw snapshot hash mismatch: {snapshot_id}")
         return metadata
 
-    def append_canonical_bars(self, bars: list[CanonicalBar]) -> Path:
+    def append_canonical_bars(self, bars: list[CanonicalBar], *, canonical_revision: str | None = None) -> Path:
         """Append validated observations; conflicting providers remain separate rows."""
-        evaluation=DataQualityService().evaluate(bars)
+        evaluation=DataQualityService().evaluate(bars, canonical_revision=canonical_revision)
         issues=list(evaluation.results)
         failures=[issue for issue in issues if issue.code == "DUPLICATE_BAR"]
         if failures:
