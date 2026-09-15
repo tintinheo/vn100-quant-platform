@@ -55,7 +55,14 @@ if sync.actionable and market_file.exists():
     c3.metric("As of",market.get("as_of",""))
     if market.get("universe_mode")!="STRICT_PIT": st.warning("CURRENT_UNIVERSE_PROXY — historical results are not a true point-in-time VN100 backtest.")
     if market.get("sector_mode")!="STRICT_PIT": st.warning(market.get("sector_warning") or "Current sector mapping is being used as a historical proxy.")
-    if "PROXY" in market.get("cap_index_mode",""): st.info("Market regime currently uses an equal-weight proxy until an official cap-index series is ingested.")
+    if "PROXY" in market.get("cap_index_mode", ""):
+        # The equal-weight series is an independent breadth/regime leg; it must
+        # never be presented as a substitute for the required official index.
+        st.warning(
+            f"Official cap-index input unavailable: "
+            f"{market.get('cap_index_warning') or market.get('cap_index_mode')}. "
+            "Bull regime classification is disabled."
+        )
 else:
     st.info("Market artifacts are unavailable until governed synchronization produces accepted canonical data.")
 
