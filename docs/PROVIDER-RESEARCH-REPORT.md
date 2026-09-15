@@ -22,6 +22,7 @@
 | **1.8** | **2026-09-14** | **Added a canonical index OHLC/turnover capability and raw lineage path for the DNSE candidate. The `INDEX` bar type, VNINDEX literal, live turnover field/schema/units remain `[GUESS]`; no new evidence, admission, or live-validation status.** |
 | **1.9** | **2026-09-15** | **Repeated the local/reachable-history/committed-archive artifact search without recovering `vn100_multisource_feed_v1`; reconfirmed the stable packaged equivalent and its complete integrated tests. Added controlled doctor failure/cleanup coverage; 126 tests passed offline. Historical standalone 10/10 remains withdrawn; provider evidence/admission/live-validation is unchanged.** |
 | **2.0** | **2026-09-15** | **Added packaged versioned provider policy/admission records and secret references. DNSE remains enabled only as the leading read-only candidate; Vietstock and CafeF remain disabled. No live evidence or admission status changed.** |
+| **2.1** | **2026-09-15** | **Verified the active code/config boundary offline: DNSE is read-only and CANDIDATE, environment/Streamlit secrets are lazy and redacted, and forced refresh has no secondary/synthetic/SSI fallback. No credentials were available, so no live doctor, cross-validation, VN100-literal verification, admission, or Refresh Now live run occurred.** |
 
 ## 1. Kết luận
 

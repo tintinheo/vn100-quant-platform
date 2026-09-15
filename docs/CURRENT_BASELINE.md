@@ -76,6 +76,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (sync publication/UI hardening)** | **2026-09-15** | **Delayed canonical publication until the complete synchronization batch passes DQ, made Parquet replacements atomic, persisted consumer-facing sync report aliases, and exposed all required UI states. Offline tested only; no provider-admission/live-validation change.** |
 | **3.5 (artifact recovery recheck)** | **2026-09-15** | **A repeat checkout/reachable-Git/committed-archive search did not recover `vn100_multisource_feed_v1`; the packaged `src/vnquant/` equivalent remains the active path. Added fail-closed doctor cleanup coverage; full suite: 126 passed offline. The historical standalone 10/10 claim remains withdrawn; no provider-admission/live-validation change.** |
 | **3.5 (versioned provider policy)** | **2026-09-15** | **Moved provider policy and versioned admission records into packaged configuration, added environment/approved-secret-store DNSE credential resolution and explicit history/current-membership evidence gates. Offline tested only; no provider-admission/live-validation change.** |
+| **3.5 (credential/no-fallback verification)** | **2026-09-15** | **Connected environment-first or Streamlit-managed DNSE secrets without storing values and added explicit candidate, doctor-only, redaction, and forced-refresh no-fallback regressions. Offline tested only; DNSE remains CANDIDATE / NOT LIVE VALIDATED.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

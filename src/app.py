@@ -3,9 +3,15 @@ import json
 import pandas as pd
 import streamlit as st
 from vnquant.data.source_sync import SourceSyncOrchestrator
+from vnquant.data.provider_registry import default_provider_registry
 
 def run_startup_sync(data_dir="data", orchestrator=None, *, force=False):
-    return (orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"}, force=force)
+    # Streamlit's managed secret store is the only UI-side alternative to
+    # environment variables. Values remain lazy and never enter sync reports.
+    registry = None if orchestrator else default_provider_registry(secret_store=st.secrets.get)
+    return (orchestrator or SourceSyncOrchestrator(data_dir, registry=registry)).sync(
+        {"daily_ohlcv"}, force=force
+    )
 
 def display_sync_state(report):
     """Render one unambiguous application data state."""

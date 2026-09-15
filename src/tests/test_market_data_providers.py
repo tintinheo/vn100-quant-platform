@@ -78,6 +78,41 @@ def test_dnse_credentials_can_resolve_from_approved_secret_store():
     assert source.resolve() == DNSECredentials("fake-key", "fake-secret")
 
 
+def test_default_registry_wires_approved_secret_store_without_persisting_values():
+    secrets = {"DNSE_API_KEY": "fake-key", "DNSE_API_SECRET": "fake-secret"}
+    registry = default_provider_registry(secret_store=secrets.get)
+    provider = registry.registration("dnse_openapi").provider
+
+    assert provider._credential_source.resolve() == DNSECredentials("fake-key", "fake-secret")
+    assert "fake-key" not in repr(registry.registration("dnse_openapi"))
+    assert "fake-secret" not in repr(registry.registration("dnse_openapi"))
+
+
+def test_environment_credentials_take_precedence_over_secret_store(monkeypatch):
+    monkeypatch.setenv("DNSE_API_KEY", "environment-key")
+    monkeypatch.setenv("DNSE_API_SECRET", "environment-secret")
+    source = DNSECredentialSource(
+        "DNSE_API_KEY", "DNSE_API_SECRET",
+        secret_store={"DNSE_API_KEY": "stored-key", "DNSE_API_SECRET": "stored-secret"},
+    )
+
+    assert source.resolve() == DNSECredentials("environment-key", "environment-secret")
+
+
+def test_missing_dnse_credentials_fail_redacted(monkeypatch):
+    monkeypatch.delenv("DNSE_API_KEY", raising=False)
+    monkeypatch.delenv("DNSE_API_SECRET", raising=False)
+    registry = default_provider_registry()
+    source = registry.registration("dnse_openapi").provider._credential_source
+
+    with pytest.raises(ProviderConfigurationError) as caught:
+        source.resolve()
+    message = str(caught.value)
+    assert "credentials are unavailable" in message
+    assert "DNSE_API_KEY" not in message
+    assert "DNSE_API_SECRET" not in message
+
+
 def test_disabled_vietstock_cannot_be_promoted_even_with_future_evidence():
     registry = default_provider_registry()
 

@@ -294,8 +294,13 @@ class ProviderRegistry:
         return registration.provider
 
 
-def default_provider_registry() -> ProviderRegistry:
-    """Build the fail-closed registry from the packaged, versioned policy file."""
+def default_provider_registry(*, secret_store=None) -> ProviderRegistry:
+    """Build the fail-closed registry from the packaged, versioned policy file.
+
+    ``secret_store`` may be an approved mapping/getter such as
+    ``st.secrets.get``.  Credential values are resolved lazily by the adapter
+    and are never copied into registry records or admission evidence.
+    """
     from vnquant.config import provider_configurations
     from .providers import (
         CafeFReferenceProvider,
@@ -310,6 +315,7 @@ def default_provider_registry() -> ProviderRegistry:
             credential_source=DNSECredentialSource(
                 record.credentials["api_key_reference"],
                 record.credentials["api_secret_reference"],
+                secret_store=secret_store,
             )
         ),
         "vietstock": lambda record: VietstockDataFeedProvider(),

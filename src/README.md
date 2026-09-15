@@ -36,6 +36,14 @@ python -m pytest -q
 
 No SSI credentials are used or required.
 
+DNSE's read-only API key and secret may be supplied as `DNSE_API_KEY` and
+`DNSE_API_SECRET` environment variables. A Streamlit deployment may instead
+place those same names in its managed secret store. Local
+`.streamlit/secrets.toml` files are ignored by Git. Never place credential
+values in source, configuration, logs, doctor evidence, or admission records.
+Credentials do not make the candidate selectable: DNSE remains unavailable to
+real synchronization until every Source Admission gate passes.
+
 ## Existing offline workflow
 
 Backtest and pipeline commands consume already validated warehouse artifacts:

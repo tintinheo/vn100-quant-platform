@@ -134,7 +134,8 @@ def test_no_admitted_provider_blocks_real_mode(tmp_path):
     assert not report.cache_accepted
 
 
-def test_no_synthetic_or_undocumented_fallback(tmp_path):
+@pytest.mark.parametrize("force", [False, True])
+def test_no_synthetic_or_undocumented_fallback(tmp_path, force):
     client = FakeDNSESDK()
     client.fail = True
     registry, _ = admitted_dnse(client)
@@ -158,7 +159,7 @@ def test_no_synthetic_or_undocumented_fallback(tmp_path):
 
     report = SourceSyncOrchestrator(
         tmp_path, registry=registry, today=lambda: date(2026, 9, 14),
-        now=lambda: NOW, expected_session=lambda today: today).sync()
+        now=lambda: NOW, expected_session=lambda today: today).sync(force=force)
 
     assert report.status == SyncStatus.SYNC_FAILED.value
     assert report.provider_id is None
