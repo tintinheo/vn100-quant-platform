@@ -332,15 +332,53 @@ def default_provider_registry(*, secret_store=None) -> ProviderRegistry:
         if provider.provider_id != record.provider_id:
             raise ProviderNotAllowed(f"configured provider id {record.provider_id!r} mismatches adapter")
         evidence_fields = AdmissionEvidence.__dataclass_fields__
-        evidence = AdmissionEvidence(
-            **{key: value for key, value in record.evidence.items() if key in evidence_fields}
+        evidence_values = {
+            key: value for key, value in record.evidence.items() if key in evidence_fields
+        }
+        # YAML admission records are data, not Python objects.  Convert their
+        # validation entries explicitly so promotion checks cannot accidentally
+        # accept an untyped/truthy mapping or fail with an AttributeError.
+        evidence_values["validation_results"] = tuple(
+            ValidationResult(
+                check=str(value.get("check", "")),
+                passed=value.get("passed") is True,
+                evidence_reference=str(value.get("evidence_reference", "")),
+                validated_at=(
+                    value.get("validated_at")
+                    if isinstance(value.get("validated_at"), date)
+                    else date.fromisoformat(str(value.get("validated_at")))
+                ),
+            )
+            for value in evidence_values.get("validation_results", ())
+        )
+        for field_name in ("reviewed_at", "next_review_at"):
+            value = evidence_values.get(field_name)
+            if value is not None and not isinstance(value, date):
+                evidence_values[field_name] = date.fromisoformat(str(value))
+        evidence = AdmissionEvidence(**evidence_values)
+        initial_state = (
+            ProviderState.RESEARCH_ONLY
+            if state is ProviderState.RESEARCH_ONLY
+            else ProviderState.CANDIDATE
         )
         registry.register(
             provider,
-            state=state,
+            state=initial_state,
             evidence=evidence,
             config_version=record.config_version,
             enabled=record.enabled,
             role=record.role,
         )
+        # A checked-in admission record may restore a previously approved
+        # lifecycle state, but only by replaying every normal evidence gate.
+        # Merely writing ``state: ADMITTED`` can therefore never bypass doctor,
+        # reconciliation, capability, real-data, or enabled-provider checks.
+        if state not in {ProviderState.CANDIDATE, ProviderState.RESEARCH_ONLY}:
+            path = (
+                ProviderState.DOCTOR_PASSED,
+                ProviderState.CROSS_VALIDATED,
+                ProviderState.ADMITTED,
+            )
+            for target in path[: path.index(state) + 1] if state in path else (state,):
+                registry.transition(provider.provider_id, target)
     return registry

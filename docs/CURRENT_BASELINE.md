@@ -78,6 +78,8 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (versioned provider policy)** | **2026-09-15** | **Moved provider policy and versioned admission records into packaged configuration, added environment/approved-secret-store DNSE credential resolution and explicit history/current-membership evidence gates. Offline tested only; no provider-admission/live-validation change.** |
 | **3.5 (credential/no-fallback verification)** | **2026-09-15** | **Connected environment-first or Streamlit-managed DNSE secrets without storing values and added explicit candidate, doctor-only, redaction, and forced-refresh no-fallback regressions. Offline tested only; DNSE remains CANDIDATE / NOT LIVE VALIDATED.** |
 
+| **3.5 (admission-record restoration)** | **2026-09-15** | **Packaged post-candidate provider states now restore only through typed evidence and replayed lifecycle gates. DNSE remains CANDIDATE / NOT LIVE VALIDATED because credentials and required live/cross-source evidence are unavailable.** |
+
 ## Historical-artifact isolation (2026-09-14)
 
 The v3.1 archive, its embedded SSI adapter and SSI-specific doctor/bootstrap,
