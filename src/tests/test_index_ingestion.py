@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import hashlib
+from pathlib import Path
 
 import pandas as pd
 
@@ -10,6 +11,14 @@ from vnquant.jobs.pipeline import _official_cap_index
 
 
 NOW = datetime(2026, 9, 14, tzinfo=timezone.utc)
+
+
+def test_app_never_describes_equal_weight_leg_as_cap_index_substitute():
+    app_source = (Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8")
+
+    assert "uses an equal-weight proxy" not in app_source
+    assert "Official cap-index input unavailable" in app_source
+    assert "Bull regime classification is disabled" in app_source
 
 
 def test_canonical_index_storage_retains_raw_lineage_and_turnover(tmp_path):
