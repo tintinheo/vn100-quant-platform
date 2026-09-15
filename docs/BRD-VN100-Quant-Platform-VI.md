@@ -41,6 +41,7 @@
 | **3.5.17** | **2026-09-14** | **Bắt buộc OHLC và turnover VN-Index/VN100 canonical, có lineage raw snapshot cho nhánh cap-weighted. Series official thiếu hoặc stale phải công bố degraded proxy và không được tạo bull regime. Chỉ offline-tested; admission/live validation không đổi.** |
 | **3.5.18** | **2026-09-14** | **Đã implement portfolio-risk fail-closed trước publication với sizing có costs, constraint portfolio/regime và audit decision. Chỉ offline-tested.** |
 | **3.5.19** | **2026-09-15** | **Thêm reporting purged forward-validation fail-closed, gate riêng từng strategy family, accounting đầy đủ trials/placebo và gate shadow không dùng vốn. Chưa chạy validation giá thật vì chưa có provider admitted; mọi strategy/forecast vẫn suppressed.** |
+| **3.5.20** | **2026-09-15** | **Siết source synchronization để toàn bộ batch đa capability hoàn tất normalization và DQ trước khi publish canonical, persist các field report cho consumer, và hiển thị rõ `SYNCING`, `FRESH`, `DEGRADED_CACHED_DATA`, `STALE`, `FAILED`, `NO_ADMITTED_PROVIDER`. Chỉ offline-tested; admission/live-validation không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 

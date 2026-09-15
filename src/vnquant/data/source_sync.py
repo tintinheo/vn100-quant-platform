@@ -95,6 +95,11 @@ class SyncReport:
     dq_result: Mapping[str, str] = field(default_factory=dict)
     freshness_key: str = ""
     runtime_mode: str = "APP_START"
+    # Stable, presentation-facing aliases.  The older names above remain for
+    # compatibility with already persisted reports and pipeline consumers.
+    data_as_of: str | None = None
+    last_sync_at: str | None = None
+    rows_written: int = 0
 
     @classmethod
     def from_dict(cls, value: dict) -> "SyncReport":
@@ -111,6 +116,9 @@ class SyncReport:
         value.setdefault("dq_result", {})
         value.setdefault("freshness_key", "")
         value.setdefault("runtime_mode", "APP_START")
+        value.setdefault("data_as_of", value.get("last_accepted_market_date"))
+        value.setdefault("last_sync_at", value.get("last_successful_sync"))
+        value.setdefault("rows_written", value.get("canonical_rows_written", 0))
         return cls(**value)
 
 
@@ -200,6 +208,12 @@ class SourceSyncOrchestrator:
         temporary.replace(path)
 
     def _persist(self, report: SyncReport) -> SyncReport:
+        report = SyncReport(**{
+            **asdict(report),
+            "data_as_of": report.data_as_of or report.last_accepted_market_date,
+            "last_sync_at": report.last_sync_at or report.last_successful_sync,
+            "rows_written": report.canonical_rows_written,
+        })
         self._write_json(self.report_path, asdict(report))
         Warehouse(self.data_dir).persist_sync_report(report)
         return report
@@ -263,6 +277,9 @@ class SourceSyncOrchestrator:
                                         resolution_failure, key, fetched=False)
 
         ranges, snapshots, changes, dq, dq_scores = {}, [], {}, {}, []
+        pending_members: pd.DataFrame | None = None
+        pending_bars: list[tuple[str, pd.DataFrame, list[CanonicalBar]]] = []
+        pending_index: list[IndexBar] = []
         provider_objects = {}
         fetched = False
         try:
@@ -283,13 +300,14 @@ class SourceSyncOrchestrator:
                     snapshots.append(snapshot.snapshot_id)
                     members = provider.normalize_index_members(raw)
                     master = pd.DataFrame({"symbol": members, "index_code": "VN100", "provider": provider_id})
-                    Warehouse(self.data_dir).write_table(master, "security_master")
+                    pending_members = master
                     changes[capability] = len(master)
                     dq[capability] = "PASS" if members else "FAIL"
                     if not members:
                         raise RuntimeError("DQ failed: empty VN100 membership")
                 elif capability == "daily_ohlcv":
-                    members = self._members()
+                    members = (sorted(pending_members.symbol.astype(str).str.upper().unique())
+                               if pending_members is not None else self._members())
                     count, worst = 0, "PASS"
                     for symbol in members:
                         raw = provider.fetch_daily_history(symbol, start, expected)
@@ -303,7 +321,6 @@ class SourceSyncOrchestrator:
                         canonical = [self._canonical(row, raw, snapshot) for _, row in frame.iterrows()]
                         evaluation = DataQualityService().evaluate(canonical,
                             expected_latest_session=expected, admitted_providers={provider_id})
-                        Warehouse(self.data_dir).persist_dq_evaluation(evaluation)
                         dq_scores.append(evaluation.score)
                         if not evaluation.actionable:
                             codes = ", ".join(result.code for result in evaluation.results)
@@ -314,9 +331,8 @@ class SourceSyncOrchestrator:
                             keys = set(zip(existing.symbol, existing.timestamp, existing.provider))
                             canonical = [bar for bar in canonical
                                 if (bar.symbol, bar.timestamp, bar.provider) not in keys]
-                        if canonical:
-                            Warehouse(self.data_dir).append_canonical_bars(canonical)
-                        count += self._merge_bars(frame, symbol)
+                        pending_bars.append((symbol, frame, canonical))
+                        count += self._merged_bar_count(frame, symbol)
                     changes[capability], dq[capability] = count, worst
                 elif capability == "index_daily_ohlct":
                     # [GUESS] VNINDEX is the configured baseline index until its live
@@ -337,13 +353,25 @@ class SourceSyncOrchestrator:
                         keys = set(zip(existing.index_code, existing.timestamp, existing.provider))
                         canonical = [bar for bar in canonical
                                      if (bar.index_code, bar.timestamp, bar.provider) not in keys]
-                    if canonical:
-                        Warehouse(self.data_dir).append_index_bars(canonical)
+                    pending_index.extend(canonical)
                     changes[capability], dq[capability] = len(canonical), "PASS"
                 now = self.now().isoformat()
                 watermarks[f"{provider_id}:{capability}"] = ProviderWatermark(
                     provider_id, capability, expected.isoformat(), now)
 
+            # Nothing canonical is exposed until every capability has fetched,
+            # normalized, and passed DQ.  Individual file replacement is atomic;
+            # the synchronization lock prevents application readers observing the
+            # accepted revision while this publication block is in progress.
+            warehouse = Warehouse(self.data_dir)
+            if pending_members is not None:
+                warehouse.write_table(pending_members, "security_master")
+            for symbol, frame, canonical in pending_bars:
+                if canonical:
+                    warehouse.append_canonical_bars(canonical)
+                self._merge_bars(frame, symbol)
+            if pending_index:
+                warehouse.append_index_bars(pending_index)
             self._write_json(self.watermark_path, {k: asdict(v) for k, v in watermarks.items()})
             now = self.now().isoformat()
             report = self._make_report(started, expected=expected, required_capabilities=required,
@@ -420,6 +448,14 @@ class SourceSyncOrchestrator:
         changed = len(combined) - len(old)
         wh.write_bars(combined, symbol)
         return max(0, changed)
+
+    def _merged_bar_count(self, incoming: pd.DataFrame, symbol: str) -> int:
+        """Calculate an incremental write count without publishing data."""
+        path = self.data_dir / "parquet" / "bars" / f"{symbol.upper()}.parquet"
+        old = pd.read_parquet(path) if path.exists() else pd.DataFrame()
+        combined = pd.concat([old, incoming], ignore_index=True) if not old.empty else incoming.copy()
+        keys = [column for column in ("symbol", "trading_date", "provider") if column in combined]
+        return max(0, len(combined.drop_duplicates(keys, keep="last")) - len(old))
 
     def _failure_report(self, started, previous, accepted, expected, providers, reason, key,
                         *, fetched, ranges=None, snapshots=None):

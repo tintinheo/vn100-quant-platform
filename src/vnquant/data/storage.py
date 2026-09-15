@@ -168,7 +168,9 @@ class Warehouse:
         import pyarrow as pa, pyarrow.parquet as pq
         out=self.parquet/f"{name}.parquet"
         out.parent.mkdir(parents=True,exist_ok=True)
-        pq.write_table(pa.Table.from_pandas(df,preserve_index=False),out)
+        temporary=out.with_name(f".{out.name}.{os.getpid()}.tmp")
+        pq.write_table(pa.Table.from_pandas(df,preserve_index=False),temporary)
+        temporary.replace(out)
         return out
     def read_table(self,name:str)->pd.DataFrame:
         return pd.read_parquet(self.parquet/f"{name}.parquet")
@@ -176,7 +178,9 @@ class Warehouse:
         import pyarrow as pa, pyarrow.parquet as pq
         p=self.parquet/"bars"; p.mkdir(parents=True,exist_ok=True)
         out=p/f"{symbol.upper()}.parquet"
-        pq.write_table(pa.Table.from_pandas(df,preserve_index=False),out)
+        temporary=out.with_name(f".{out.name}.{os.getpid()}.tmp")
+        pq.write_table(pa.Table.from_pandas(df,preserve_index=False),temporary)
+        temporary.replace(out)
         return out
     def read_bars(self,symbol:str)->pd.DataFrame:
         return pd.read_parquet(self.parquet/"bars"/f"{symbol.upper()}.parquet")

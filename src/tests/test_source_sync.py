@@ -268,3 +268,40 @@ def test_expected_session_skips_weekend_and_watermarks_each_capability(tmp_path)
     assert set(report.providers) == {"daily_ohlcv", "current_index_members"}
     assert {watermark.capability for watermark in watermarks.values()} == set(report.providers)
     assert report.dq_result == {"current_index_members": "PASS", "daily_ohlcv": "PASS"}
+
+
+def test_report_persists_public_sync_field_names(tmp_path):
+    report = SourceSyncOrchestrator(
+        tmp_path, registry=registry_for(CountingProvider()),
+        today=lambda: date(2026, 9, 14),
+    ).sync()
+
+    persisted = json.loads((tmp_path / "source_sync_result.json").read_text(encoding="utf-8"))
+    assert report.data_as_of == persisted["data_as_of"] == "2026-09-14"
+    assert report.last_sync_at == persisted["last_sync_at"]
+    assert report.rows_written == persisted["rows_written"] == report.canonical_rows_written
+    assert persisted["raw_snapshot_ids"]
+
+
+def test_failed_batch_does_not_publish_partially_accepted_canonical_data(tmp_path):
+    class TwoSymbolProvider(CountingProvider):
+        def fetch_current_index_members(self, index_code="VN100"):
+            return self._fetch(["AAA", "BBB"], {"index_code": index_code}, "test://members")
+
+        def fetch_daily_history(self, symbol, start, end):
+            fetched = super().fetch_daily_history(symbol, start, end)
+            if symbol == "BBB":
+                payload = json.loads(fetched.payload)
+                payload[0]["high"] = 1.0  # deterministic OHLC DQ failure
+                return ProviderFetch(**{**fetched.__dict__, "payload": json.dumps(payload).encode()})
+            return fetched
+
+    report = SourceSyncOrchestrator(
+        tmp_path, registry=registry_for(TwoSymbolProvider()),
+        today=lambda: date(2026, 9, 14),
+    ).sync()
+
+    assert report.mode == SyncMode.FAILED.value
+    assert report.raw_snapshot_ids  # rejected evidence is still retained
+    assert not (tmp_path / "parquet" / "canonical_bars.parquet").exists()
+    assert not list((tmp_path / "parquet" / "bars").glob("*.parquet"))

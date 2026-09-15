@@ -42,6 +42,7 @@
 
 | **3.5.18** | **2026-09-14** | **Implemented the post-recommendation/pre-publication portfolio-risk service, sequential capacity reservation, cost/stop/lot/loss sizing, configured portfolio/regime ceilings, decision persistence, and fail-closed rejection coverage. Offline tested only.** |
 | **3.5.19** | **2026-09-15** | **Implemented purged forward-fold construction and independent family reports with execution, stability, calibration, placebo, honest-trial and shadow-state gates. No admitted real dataset exists, so no empirical validation or shadow period has begun.** |
+| **3.5.20** | **2026-09-15** | **Completed batch-level DQ-before-publication behavior, atomic Parquet replacement, persisted `data_as_of`/`last_sync_at`/`rows_written` report fields, and explicit Streamlit synchronization/data-state rendering. Offline tested only; admission/live-validation status is unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

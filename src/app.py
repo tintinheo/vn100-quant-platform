@@ -7,14 +7,44 @@ from vnquant.data.source_sync import SourceSyncOrchestrator
 def run_startup_sync(data_dir="data", orchestrator=None, *, force=False):
     return (orchestrator or SourceSyncOrchestrator(data_dir)).sync({"daily_ohlcv"}, force=force)
 
+def display_sync_state(report):
+    """Render one unambiguous application data state."""
+    if report.status == "NO_ADMITTED_PROVIDER":
+        state = "NO_ADMITTED_PROVIDER"
+    elif report.mode == "DEGRADED_CACHED_DATA":
+        state = "DEGRADED_CACHED_DATA"
+    elif report.mode == "STALE" or report.status == "CACHE_STALE":
+        state = "STALE"
+    elif report.mode == "FAILED" or report.status == "SYNC_FAILED":
+        state = "FAILED"
+    else:
+        state = "FRESH"
+    message = (f"{state} — provider: {report.provider_id or 'none'}; "
+               f"data as of: {report.data_as_of or 'unavailable'}; "
+               f"last sync: {report.last_sync_at or 'never'}; DQ: {report.dq_status}")
+    if state == "FRESH":
+        st.success(message)
+    elif state == "DEGRADED_CACHED_DATA":
+        st.warning(message)
+    elif state == "STALE":
+        st.warning(message)
+    else:
+        st.error(message)
+    return state
+
 st.set_page_config(page_title="VNQuant v3.3",layout="wide")
 st.title("VNQuant v3.3 — SSI-Free Viewer")
 st.caption("Decision support only. Startup performs a governed source sync check; it never places orders.")
 force_refresh=st.sidebar.button("Refresh now", help="Force a governed provider recheck")
+sync_indicator = st.empty()
+sync_indicator.info("SYNCING — checking admitted providers and accepted cache…")
 sync=run_startup_sync(force=force_refresh)
-st.caption(f"Source: {sync.provider_id or 'none'} | mode: {sync.mode} | degraded: {'yes' if sync.degraded_mode else 'no'} | cache accepted: {'yes' if sync.cache_accepted else 'no'} | age: {sync.data_age_days if sync.data_age_days is not None else 'unknown'} days | last sync: {sync.last_successful_sync or 'never'} | DQ: {sync.dq_status}")
-if not sync.actionable:
+sync_indicator.empty()
+display_sync_state(sync)
+# Defensive fallback for future orchestrator statuses not yet mapped above.
+if sync.status not in {"READY", "CACHE_STALE", "SYNC_FAILED", "NO_ADMITTED_PROVIDER"}:
     st.error(sync.status)
+st.caption(f"Source: {sync.provider_id or 'none'} | mode: {sync.mode} | degraded: {'yes' if sync.degraded_mode else 'no'} | cache accepted: {'yes' if sync.cache_accepted else 'no'} | age: {sync.data_age_days if sync.data_age_days is not None else 'unknown'} days | last sync: {sync.last_successful_sync or 'never'} | DQ: {sync.dq_status}")
 pub=Path("publish")
 market_file=pub/"market.json"
 if sync.actionable and market_file.exists():
@@ -27,7 +57,7 @@ if sync.actionable and market_file.exists():
     if market.get("sector_mode")!="STRICT_PIT": st.warning(market.get("sector_warning") or "Current sector mapping is being used as a historical proxy.")
     if "PROXY" in market.get("cap_index_mode",""): st.info("Market regime currently uses an equal-weight proxy until an official cap-index series is ingested.")
 else:
-    st.info("No market artifact yet. Run the local bootstrap and pipeline first.")
+    st.info("Market artifacts are unavailable until governed synchronization produces accepted canonical data.")
 
 tabs=st.tabs(["Candidates","Sector Rotation","Backtest","Data/Model Notes"])
 with tabs[0]:

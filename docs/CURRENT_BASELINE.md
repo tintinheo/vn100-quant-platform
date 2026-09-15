@@ -69,6 +69,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (official-index regime input)** | **2026-09-14** | **Added canonical lineaged official-index OHLC/turnover ingestion and independent dual-index regime inputs; absent/stale official data now emits a degraded non-bull state. Offline tested only; no live-validation/admission change.** |
 | **3.5 (portfolio-risk gate)** | **2026-09-14** | **Added versioned, fail-closed portfolio-risk sizing/constraints and auditable pre-publication decisions. Offline tested only; no live-data/provider-admission change.** |
 | **3.5 (validation/shadow gate)** | **2026-09-15** | **Added purged forward-validation reports, honest trial/placebo accounting and no-capital shadow-state governance. Offline mechanics only; empirical validation is blocked pending admitted PIT data.** |
+| **3.5 (sync publication/UI hardening)** | **2026-09-15** | **Delayed canonical publication until the complete synchronization batch passes DQ, made Parquet replacements atomic, persisted consumer-facing sync report aliases, and exposed all required UI states. Offline tested only; no provider-admission/live-validation change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 
