@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from io import BytesIO
+import hashlib
 from pathlib import Path
 
 import pandas as pd
@@ -22,11 +23,14 @@ class CSVProvider(MarketDataProvider):
 
     def _fetch(self, path: Path, parameters: dict[str, str], *, unit: str,
                semantics: str) -> ProviderFetch:
+        payload = path.read_bytes()
+        digest = hashlib.sha256(payload).hexdigest()
+        import_parameters = {**parameters, "file_sha256": digest}
         return ProviderFetch(
             provider=self.provider_id,
-            payload=path.read_bytes(),
+            payload=payload,
             retrieved_at=datetime.now(timezone.utc),
-            request_parameters=parameters,
+            request_parameters=import_parameters,
             adapter_version=self.adapter_version,
             source_reference=str(path.resolve()),
             trust_tier="authorized_manual_import",

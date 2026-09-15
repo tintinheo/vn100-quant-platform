@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Mapping
+import hashlib
 import pandas as pd
 
 CANONICAL_COLUMNS = ["symbol","trading_date","open","high","low","close","volume","value","provider"]
@@ -27,6 +28,11 @@ class ProviderFetch:
     trust_tier: str
     raw_price_unit: str
     price_semantics: str
+
+    @property
+    def payload_sha256(self) -> str:
+        """SHA-256 of the exact, unmodified response/import bytes."""
+        return hashlib.sha256(self.payload).hexdigest()
 
     def __post_init__(self) -> None:
         if self.retrieved_at.tzinfo is None or self.retrieved_at.utcoffset() is None:

@@ -19,8 +19,9 @@ def test_raw_snapshot_is_content_verified_and_read_only(tmp_path):
     assert path.read_bytes() == payload
     assert path.stat().st_mode & 0o222 == 0
     changed = RawSnapshot("s1", "manual", NOW, b"changed", hashlib.sha256(b"changed").hexdigest())
-    # Snapshot id plus content digest gives another immutable revision, never replacement.
-    assert Warehouse(tmp_path).store_raw_snapshot(changed) != path
+    # A lineage identifier names exactly one immutable payload.
+    with pytest.raises(RuntimeError, match="already identifies different payload"):
+        Warehouse(tmp_path).store_raw_snapshot(changed)
     assert path.read_bytes() == payload
 
 
@@ -78,3 +79,28 @@ def _bar(provider, snapshot, close="10"):
     return CanonicalBar(NOW, "AAA", Decimal("10"), Decimal("12"), Decimal("9"),
                         Decimal(close), 100, Decimal("1000"), Decimal("9"),
                         provider, NOW, (), snapshot)
+
+
+def test_reference_records_require_existing_source_snapshot(tmp_path):
+    from datetime import date
+    from vnquant.data.models import SectorMembership, UniverseMembership
+
+    warehouse = Warehouse(tmp_path)
+    universe = UniverseMembership("VN100", "AAA", date(2026, 9, 14), None, "official", "missing")
+    sector = SectorMembership("AAA", "10", "Banks", "ICB", date(2026, 9, 14), None,
+                              "official", "missing")
+    with pytest.raises(ValueError, match="raw_snapshot_id"):
+        warehouse.write_records("universe_current", [universe])
+    with pytest.raises(ValueError, match="raw_snapshot_id"):
+        warehouse.write_records("sector_membership", [sector])
+
+
+def test_raw_snapshot_id_cannot_be_reused_for_different_file(tmp_path):
+    warehouse = Warehouse(tmp_path)
+    first = b"first"
+    second = b"second"
+    warehouse.store_raw_snapshot(RawSnapshot("same", "manual", NOW, first,
+                                             hashlib.sha256(first).hexdigest()))
+    with pytest.raises(RuntimeError, match="already identifies different payload"):
+        warehouse.store_raw_snapshot(RawSnapshot("same", "manual", NOW, second,
+                                                 hashlib.sha256(second).hexdigest()))

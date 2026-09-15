@@ -67,10 +67,14 @@ def _load_panel(wh: Warehouse, sector_pit_path: str | None = None):
     sec=None
     try: sec=wh.read_table("security_master")
     except Exception: pass
-    for p in sorted((wh.parquet/"bars").glob("*.parquet")):
-        d=add_baseline_features(pd.read_parquet(p))
-        frames.append(d)
-    if not frames: raise RuntimeError("No bars in warehouse. Run bootstrap first.")
+    canonical_path = wh.parquet / "canonical_bars.parquet"
+    if canonical_path.exists():
+        canonical = pd.read_parquet(canonical_path)
+        canonical["trading_date"] = pd.to_datetime(canonical.timestamp).dt.date
+        canonical["value"] = canonical.turnover
+        for _, frame in canonical.groupby("symbol", sort=True):
+            frames.append(add_baseline_features(frame.copy()))
+    if not frames: raise RuntimeError("No canonical bars in warehouse. Run bootstrap first.")
     panel=pd.concat(frames,ignore_index=True)
     mapped=apply_sector_mapping(panel,pit_path=sector_pit_path,current_master=sec)
     return mapped.panel, mapped.mode.value, mapped.warning

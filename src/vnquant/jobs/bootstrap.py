@@ -9,7 +9,7 @@ import json
 import pandas as pd
 
 from vnquant.data.base import DataMode
-from vnquant.data.models import CanonicalBar, RawSnapshot
+from vnquant.data.models import CanonicalBar, RawSnapshot, UniverseMembership
 from vnquant.data.provider_registry import (
     ProviderRegistry,
     ProviderRegistryError,
@@ -42,13 +42,17 @@ def run(
     universe_snapshot = _snapshot(universe_fetch)
     wh.store_raw_snapshot(universe_snapshot)
     members = provider.normalize_index_members(universe_fetch)
-    security_master = pd.DataFrame(
-        {"symbol": members, "index_code": "VN100", "provider": provider.provider_id}
-    )
+    memberships = [UniverseMembership(
+        "VN100", symbol, end, None, provider.provider_id, universe_snapshot.snapshot_id
+    ) for symbol in members]
+    # Current membership is canonical reference data too: it cannot be published
+    # without the same persisted raw response used to parse it.
+    wh.write_records("universe_current", memberships)
+    security_master = pd.DataFrame([{
+        "symbol": record.symbol, "index_code": record.index_code,
+        "provider": record.source, "source_snapshot_id": record.source_snapshot_id,
+    } for record in memberships])
     wh.write_table(security_master, "security_master")
-    wh.write_table(
-        security_master.assign(snapshot_date=end.isoformat()), "universe_current"
-    )
     print(
         f"Current VN100 members: {len(members)}. Historical use is "
         "CURRENT_UNIVERSE_PROXY unless PIT snapshots are supplied."
