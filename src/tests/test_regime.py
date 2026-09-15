@@ -27,3 +27,12 @@ def test_broad_market_participation_can_confirm_strong_bull():
     result=compute_regime(cap,equal_weight,breadth)
     assert result.cap_score == result.ew_score == 3
     assert result.regime == Regime.STRONG_BULL
+
+def test_equal_weight_rally_cannot_hide_weak_cap_weighted_market():
+    cap={"close":95,"ma50":100,"ma200":105}
+    equal_weight={"close":125,"ma50":112,"ma200":101}
+    breadth={"pct_ma50":0.75,"ad_slope_10":8,"turnover_ratio":1.1}
+    result=compute_regime(cap,equal_weight,breadth)
+    assert result.cap_score == 0
+    assert result.ew_score == 3
+    assert result.regime == Regime.RISK_OFF
