@@ -39,6 +39,8 @@
 | **3.5.15** | **2026-09-14** | **Làm rõ mỗi lần chạy là synchronization check, không phải fetch cả ba provider: capability state và force rõ ràng quyết định I/O; chỉ provider admitted mới hợp lệ, ưu tiên DNSE, Vietstock vẫn contract/admission-gated và CafeF chỉ dùng để sampled validation rõ ràng. Full suite: 102 passed offline; không thay đổi trạng thái admission/live validation.** |
 | **3.5.16** | **2026-09-14** | **Đã triển khai ingestion review VN100 chính thức theo effective date và lineage snapshot nguồn, taxonomy ngành theo phiên bản/effective date, cùng quy tắc fail-closed cho tên backtest và qualification vốn thật. Chỉ test offline; không thay đổi live-data/provider admission.** |
 | **3.5.17** | **2026-09-14** | **Bắt buộc OHLC và turnover VN-Index/VN100 canonical, có lineage raw snapshot cho nhánh cap-weighted. Series official thiếu hoặc stale phải công bố degraded proxy và không được tạo bull regime. Chỉ offline-tested; admission/live validation không đổi.** |
+| **3.5.18** | **2026-09-14** | **Đã implement portfolio-risk fail-closed trước publication với sizing có costs, constraint portfolio/regime và audit decision. Chỉ offline-tested.** |
+| **3.5.19** | **2026-09-15** | **Thêm reporting purged forward-validation fail-closed, gate riêng từng strategy family, accounting đầy đủ trials/placebo và gate shadow không dùng vốn. Chưa chạy validation giá thật vì chưa có provider admitted; mọi strategy/forecast vẫn suppressed.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1438,3 +1440,21 @@ Mọi recommendation đã dựng phải qua portfolio-risk trước publication.
 Service áp dụng limit versioned `[D] [GUESS]` cho total exposure, concurrent positions, sector concentration, số lượng/exposure của correlated group, ADV participation, total open risk, per-security exposure, cash và multiplier exposure/risk theo regime. Thiếu/sai account state, entry, risk stop hoặc ADV phải fail closed. Recommendation bị reject nếu stop-distance ngoài biên hoặc các ceiling không đủ minimum lot/minimum viable notional.
 
 Mọi kết quả được lưu thành decision event `ACCEPTED`, `RESIZED` hoặc `REJECTED`, kèm quantity, estimated loss/notional, binding constraint, timestamp/ID, regime và configuration version chính xác. Chỉ accepted/resized mới được publish actionable; rejected vẫn nằm trong audit dataset. Offline mechanics không chứng minh alpha, provider admission hoặc real-data validation.
+
+
+# 36. VALIDATION SAU PIT VÀ SHADOW OPERATION (2026-09-15)
+
+Sau khi có giá và classification point-in-time từ nguồn admitted, từng strategy
+family phải được đánh giá riêng bằng expanding forward folds với purge/embargo
+bằng label horizon cộng 21 phiên `[D] [GUESS]`. Report phải giữ sample/effective
+sample, fill và mọi unfilled attempt, costs, turnover, drawdown, stability theo
+fold, calibration, OOS performance, toàn bộ model/parameter combination đã thử,
+và phân phối grouping placebo của classification.
+
+Không đạt sample, conservative execution, stability, multiple-testing trung thực,
+placebo, AUC hoặc calibration thì trạng thái là `SUPPRESSED`. Report đạt validation
+chỉ được sang `SHADOW_ONLY`; chỉ sau giai đoạn quan sát không dùng vốn rõ ràng mới
+đủ điều kiện để con người review production acceptance, không tự động accepted.
+Hiện chưa có provider admitted hoặc dataset giá thật được validate, nên run bị
+chặn bởi prerequisite và mọi strategy/forecast vẫn suppressed. Unit test offline
+chỉ kiểm tra contract, không phải bằng chứng backtest hoặc alpha.

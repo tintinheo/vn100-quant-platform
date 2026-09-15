@@ -26,6 +26,7 @@
 - Real-data validation: **NOT YET PERFORMED**.
 - Parameter governance: configurable analytics/runtime thresholds are packaged in versioned `src/vnquant/config/quant_parameters.v1.yaml`; unverified defaults are `[D] [GUESS]` with explicit calibration or verification requirements, while structural identities remain `[S]`. Offline tested only.
 - Regime index data: canonical official VN-Index/VN100 OHLC and turnover now have immutable raw-snapshot lineage. The cap and equal-weight legs are independent; absent/stale official index data is exposed as degraded and cannot produce a bull classification. Offline tested only; no index feed is live validated/admitted.
+- Validation: purged forward-fold and independent family-reporting mechanics now fail closed across sample, conservative execution, stability, multiple testing, grouping placebo, AUC and calibration gates; passing can enter only no-capital shadow state. No admitted real dataset exists, therefore no empirical validation/shadow period has run and all strategies/forecasts remain suppressed.
 
 ## Mandatory governance
 
@@ -67,6 +68,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (PIT reference-data governance)** | **2026-09-14** | **Added official-review snapshot ingestion, effective-dated sector taxonomy, and strict historical-backtest/capital-qualification gates. Offline tested only; no live-validation/admission change.** |
 | **3.5 (official-index regime input)** | **2026-09-14** | **Added canonical lineaged official-index OHLC/turnover ingestion and independent dual-index regime inputs; absent/stale official data now emits a degraded non-bull state. Offline tested only; no live-validation/admission change.** |
 | **3.5 (portfolio-risk gate)** | **2026-09-14** | **Added versioned, fail-closed portfolio-risk sizing/constraints and auditable pre-publication decisions. Offline tested only; no live-data/provider-admission change.** |
+| **3.5 (validation/shadow gate)** | **2026-09-15** | **Added purged forward-validation reports, honest trial/placebo accounting and no-capital shadow-state governance. Offline mechanics only; empirical validation is blocked pending admitted PIT data.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

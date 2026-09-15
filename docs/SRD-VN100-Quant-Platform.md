@@ -41,6 +41,7 @@
 | **3.5.17** | **2026-09-14** | **Implemented canonical official-index OHLC/turnover ingestion with immutable raw lineage, independent cap/equal-weight pipeline inputs, explicit absent/stale proxy status, and divergence regressions. Offline tested only; admission/live validation unchanged.** |
 
 | **3.5.18** | **2026-09-14** | **Implemented the post-recommendation/pre-publication portfolio-risk service, sequential capacity reservation, cost/stop/lot/loss sizing, configured portfolio/regime ceilings, decision persistence, and fail-closed rejection coverage. Offline tested only.** |
+| **3.5.19** | **2026-09-15** | **Implemented purged forward-fold construction and independent family reports with execution, stability, calibration, placebo, honest-trial and shadow-state gates. No admitted real dataset exists, so no empirical validation or shadow period has begun.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2231,3 +2232,22 @@ Any output named a **historical VN100 backtest** requires `STRICT_PIT` universe 
 For each row, the service validates entry, stop, configured stop-distance bounds and measured ADV; computes loss per share including buy/sell rates; applies the lower of the owner loss limit and configured regime-adjusted risk budget; rounds down to the configured lot; and applies cash, per-security, total exposure, sector, correlated group, ADV participation and total-open-risk ceilings. Accepted quantities reserve capacity before the next ranked row is evaluated. Missing inputs and quantities below lot/minimum notional reject rather than fabricate values.
 
 All decision states are appended to `portfolio_risk_decisions` before actionable candidates are written. The public candidate artifact is an inner join to `ACCEPTED`/`RESIZED` decisions; the audit artifact retains rejections. Each decision stores a UUID, UTC decision time, binding constraint and `parameters_version()`. Parameters are governed in the packaged registry and all uncalibrated limits remain literal `[D] [GUESS]`. Tests must cover sizing/cost/rounding, rejection inputs, each portfolio constraint class, regime limits, sequential reservation and persistence/publication ordering.
+
+
+# 36. VALIDATION REPORTING AND SHADOW STATE
+
+`vnquant.backtest.validation` constructs expanding forward folds from unique
+sessions and removes `horizon + validation.embargo_buffer_sessions` before each
+test fold. Its family evaluator accepts only OOS execution rows, requires explicit
+stability/multiple-testing/calibration evidence, records all model × parameter
+trials, compares real grouping Sharpe with the supplied placebo distribution, and
+reports samples, fills/non-fills, cost, turnover, drawdown, fold stability,
+calibration and OOS return. Any absent or failed required evidence suppresses the
+family or forecast.
+
+Passing validation changes state only to `SHADOW_ONLY`. The shadow transition
+requires `no_capital=True` and a caller-declared minimum observation-session
+requirement; completion yields only `ELIGIBLE_FOR_ACCEPTANCE_REVIEW`. The minimum
+shadow duration is deliberately not invented in implementation and remains a
+product-owner/calibration decision `[GUESS]`. No current provider is admitted, so
+the real-data validation and shadow-operating stages have not run.

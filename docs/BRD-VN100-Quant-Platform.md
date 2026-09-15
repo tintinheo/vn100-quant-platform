@@ -41,6 +41,7 @@
 | **3.5.17** | **2026-09-14** | **Required canonical, raw-snapshot-lineaged VN-Index/VN100 OHLC and turnover for the cap-weighted regime leg. An absent or stale official series is an explicit degraded proxy state and may not produce either bull regime. Offline tested only; provider admission/live validation unchanged.** |
 
 | **3.5.18** | **2026-09-14** | **Added a fail-closed portfolio-risk approval stage after recommendation construction and before publication, with cost-aware lot sizing, portfolio/regime constraints, and persisted accepted/resized/rejected decisions. Defaults remain `[D] [GUESS]`; offline tested only.** |
+| **3.5.19** | **2026-09-15** | **Added fail-closed purged forward-validation reporting, independent strategy-family gates, full trial/placebo accounting and a no-capital shadow-state gate. No real-price validation ran because no provider is admitted; every strategy and forecast remains suppressed.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2048,3 +2049,22 @@ Every constructed recommendation passes through portfolio-risk approval before p
 The service enforces versioned `[D] [GUESS]` limits for total exposure, concurrent positions, sector concentration, correlated-group count/exposure, ADV participation, total open risk, per-security exposure, cash, and regime-specific exposure/risk multipliers. Missing/invalid account state, entry, risk stop or ADV fails closed. A recommendation is rejected when its stop distance is outside configured bounds or when every applicable ceiling cannot support the minimum lot/minimum viable notional.
 
 Every outcome is an immutable decision event with `ACCEPTED`, `RESIZED`, or `REJECTED`, quantity, estimated maximum loss/notional, binding constraint, decision timestamp/ID, regime and exact configuration version. Only accepted/resized recommendations may be published as actionable; rejected rows remain in the audit dataset. These offline mechanics are not alpha, provider admission, or real-data validation evidence.
+
+
+# 36. POST-PIT VALIDATION AND SHADOW OPERATION (2026-09-15)
+
+Once admitted, point-in-time prices and classifications exist, each strategy
+family must be evaluated separately with expanding forward folds and a purge/
+embargo of label horizon plus 21 sessions `[D] [GUESS]`. Reports retain sample
+and effective-sample evidence, fills and every unfilled attempt, costs, turnover,
+drawdown, fold stability, calibration, OOS performance, all tried models and
+parameter combinations, and the classification grouping placebo distribution.
+
+Failure of the sample, conservative-execution, stability, honest multiple-testing,
+placebo, AUC, or calibration gate produces `SUPPRESSED`, never an annotated
+forecast. A passing report can become only `SHADOW_ONLY`; completion of an
+explicit no-capital observation period makes it eligible for human production-
+acceptance review, not automatically accepted. The current repository has no
+admitted provider or real-price validation dataset, so this run is blocked by
+prerequisites and all strategies/forecasts remain suppressed. Offline unit tests
+exercise the contract but are not backtest or alpha evidence.
