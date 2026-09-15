@@ -45,6 +45,7 @@
 | **3.5.21** | **2026-09-15** | **Lặp lại audit khôi phục standalone artifact nhưng không tìm thấy trong checkout, Git object có thể truy cập hoặc archive đã commit. Xác nhận implementation tương đương được package ổn định dưới `src/vnquant/` và thêm regression test cho doctor fail-closed khi provider/configuration lỗi cùng việc đóng resource. Full maintained suite: 126 passed offline; claim standalone 10/10 lịch sử vẫn bị rút lại và không thay đổi admission/live-validation.** |
 | **3.5.22** | **2026-09-15** | **Chuyển role, enablement, credential reference và admission record có version của provider vào `providers.v1.yaml`; DNSE vẫn là read-only candidate được bật, Vietstock và CafeF bị tắt. Thêm gate evidence về history depth và current membership. Không provider nào được admitted/live validated.** |
 | **3.5.23** | **2026-09-15** | **Bắt buộc một source snapshot bất biến cho mọi record giá, current-universe, official-index, sector metadata và authorized manual import được chấp nhận. Provider call giữ raw response/request metadata, canonical bars là kho ingestion giá duy nhất, và raw lineage thiếu hoặc không rõ ràng bị fail closed. Full suite: 131 passed offline; admission/live-validation không đổi.** |
+| **3.5.24** | **2026-09-15** | **Bắt buộc SyncReport được chấp nhận và gắn với một canonical revision trước feature/candidate; kiểm tra lại admission/session/age/lineage/DQ tại consumer và truyền trạng thái governance vào market/candidate artifacts. Chỉ offline-tested; admission/live-validation không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1462,3 +1463,8 @@ chỉ được sang `SHADOW_ONLY`; chỉ sau giai đoạn quan sát không dùng
 Hiện chưa có provider admitted hoặc dataset giá thật được validate, nên run bị
 chặn bởi prerequisite và mọi strategy/forecast vẫn suppressed. Unit test offline
 chỉ kiểm tra contract, không phải bằng chứng backtest hoặc alpha.
+
+
+# 37. GATE ĐỒNG BỘ TRƯỚC ANALYTICS (2026-09-15)
+
+Tính feature và dựng candidate bắt buộc có `SyncReport` được chấp nhận, gắn đúng canonical revision đang đọc. Consumer phải kiểm tra lại provider admission, độ đầy đủ/tuổi expected session, raw lineage bất biến, trạng thái universe/sector/corporate action, ngưỡng DQ blocking và reconciliation/disagreement. Thiếu hoặc sai evidence phải fail closed và xóa candidate artifact. Khi policy cho phép degraded cache, confidence cap phải được công bố rõ; không silent fallback hoặc average giá bất đồng. `market.json` và từng candidate row phải chứa trạng thái provider, synchronization, DQ, universe, sector, corporate action, lineage, canonical revision và reconciliation.

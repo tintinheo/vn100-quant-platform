@@ -46,6 +46,7 @@
 | **3.5.21** | **2026-09-15** | **Repeated the standalone-artifact recovery audit and did not recover it from the checkout, reachable Git objects, or committed archives. Confirmed the stable packaged equivalent under `src/vnquant/` and added doctor regression coverage for fail-closed provider/configuration failures and resource cleanup. Full maintained suite: 126 passed offline; the historical standalone 10/10 claim remains withdrawn and no admission/live-validation status changed.** |
 | **3.5.22** | **2026-09-15** | **Moved provider roles, enablement, credential references and versioned admission records into packaged `providers.v1.yaml`; DNSE remains the enabled read-only candidate, while Vietstock and CafeF are disabled. Added history-depth and current-membership evidence gates. No provider was admitted or live validated.** |
 | **3.5.23** | **2026-09-15** | **Enforced one immutable source snapshot for every accepted price, current-universe, official-index, sector-metadata, and authorized-manual-import record. Provider calls retain raw response/request metadata, canonical bars are the sole price-ingestion store, and missing or ambiguous raw lineage fails closed. Full suite: 131 passed offline; admission/live-validation status is unchanged.** |
+| **3.5.24** | **2026-09-15** | **Required an accepted synchronization report tied to one canonical revision before features/candidates, added consumer-side admission/session/age/lineage/DQ checks, and propagated governed statuses to market and candidate artifacts. Offline tested only; admission/live-validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2072,3 +2073,8 @@ acceptance review, not automatically accepted. The current repository has no
 admitted provider or real-price validation dataset, so this run is blocked by
 prerequisites and all strategies/forecasts remain suppressed. Offline unit tests
 exercise the contract but are not backtest or alpha evidence.
+
+
+# 37. PRE-ANALYTICS SYNCHRONIZATION GATE (2026-09-15)
+
+Feature calculation and candidate construction require an accepted `SyncReport` tied to the canonical revision being read. The consumer re-verifies provider admission, expected-session completeness and age, immutable raw lineage, universe and sector state, corporate-action state, DQ blocking score, and reconciliation/disagreement state. Missing or mismatched evidence fails closed and removes candidate artifacts. When policy explicitly permits degraded cached data, any confidence cap is published explicitly; no silent fallback or price averaging is allowed. `market.json` and every candidate row carry provider, synchronization, DQ, universe, sector, corporate-action, lineage, canonical-revision, and reconciliation status.

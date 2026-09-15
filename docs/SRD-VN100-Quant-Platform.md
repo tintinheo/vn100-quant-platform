@@ -46,6 +46,7 @@
 | **3.5.21** | **2026-09-15** | **Repeated artifact recovery across the checkout, reachable Git objects, and committed archives without finding the standalone source. Reconfirmed the installable `src/vnquant/` provider/orchestrator/cache/DQ/doctor implementation and added a doctor regression proving expected provider/configuration failures return a controlled failure and close the provider. Full suite: 126 passed offline; standalone 10/10 remains withdrawn and no admission/live-validation status changed.** |
 | **3.5.22** | **2026-09-15** | **Implemented schema/version-checked `providers.v1.yaml`, versioned admission records, environment/approved-secret-store DNSE credential resolution, disabled-provider promotion blocking, and explicit DNSE history/current-membership evidence gates. Offline tested only; admission/live-validation unchanged.** |
 | **3.5.23** | **2026-09-15** | **Enforced raw-snapshot existence, identity, hash and metadata checks at canonical/reference writes; persisted current membership with snapshot IDs; made canonical bars the only ingested price store and derived pipeline inputs from it; and recorded exact authorized-file hashes in import request metadata. Full suite: 131 passed offline; admission/live-validation unchanged.** |
+| **3.5.24** | **2026-09-15** | **Added a pre-feature consumer gate for accepted `SyncReport`/canonical revision and complete governance-status publication on market/candidate artifacts. Offline tested only; admission/live-validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2259,3 +2260,8 @@ requirement; completion yields only `ELIGIBLE_FOR_ACCEPTANCE_REVIEW`. The minimu
 shadow duration is deliberately not invented in implementation and remains a
 product-owner/calibration decision `[GUESS]`. No current provider is admitted, so
 the real-data validation and shadow-operating stages have not run.
+
+
+# 37. PRE-FEATURE SYNC-REVISION CONTRACT
+
+`jobs.pipeline.run` shall not call feature, market, sector, recommendation, or risk calculations until its `SyncReport` is accepted and its `canonical_revision` exists in canonical bars. The consumer gate independently checks the current registry admission, expected-session date and age, raw snapshot lineage, DQ score/status, universe state, sector state, corporate-action state, and reconciliation/provider-disagreement state. A failed check publishes a non-actionable `market.json`, deletes older candidate artifacts, and performs no feature work. Accepted output decorates `market.json` and every candidate row with all gate statuses and the sync run/revision identifiers. A confidence cap is explicit only for policy-permitted degraded-cache execution.

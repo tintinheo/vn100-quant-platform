@@ -100,6 +100,13 @@ class SyncReport:
     data_as_of: str | None = None
     last_sync_at: str | None = None
     rows_written: int = 0
+    canonical_revision: str | None = None
+    expected_session_status: str = "UNKNOWN"
+    lineage_status: str = "UNKNOWN"
+    universe_status: str = "UNKNOWN"
+    sector_status: str = "NOT_EVALUATED"
+    corporate_action_status: str = "UNKNOWN"
+    reconciliation_status: str = "UNKNOWN"
 
     @classmethod
     def from_dict(cls, value: dict) -> "SyncReport":
@@ -119,6 +126,13 @@ class SyncReport:
         value.setdefault("data_as_of", value.get("last_accepted_market_date"))
         value.setdefault("last_sync_at", value.get("last_successful_sync"))
         value.setdefault("rows_written", value.get("canonical_rows_written", 0))
+        value.setdefault("canonical_revision", None)
+        value.setdefault("expected_session_status", "UNKNOWN")
+        value.setdefault("lineage_status", "UNKNOWN")
+        value.setdefault("universe_status", "UNKNOWN")
+        value.setdefault("sector_status", "NOT_EVALUATED")
+        value.setdefault("corporate_action_status", "UNKNOWN")
+        value.setdefault("reconciliation_status", "UNKNOWN")
         return cls(**value)
 
 
@@ -372,12 +386,14 @@ class SourceSyncOrchestrator:
             # the synchronization lock prevents application readers observing the
             # accepted revision while this publication block is in progress.
             warehouse = Warehouse(self.data_dir)
+            canonical_revision = uuid4().hex if any(bars for _, _, bars in pending_bars) else (
+                previous.canonical_revision if previous else None)
             if pending_members is not None:
                 warehouse.write_records("universe_current", pending_memberships)
                 warehouse.write_table(pending_members, "security_master")
             for _, _, canonical in pending_bars:
                 if canonical:
-                    warehouse.append_canonical_bars(canonical)
+                    warehouse.append_canonical_bars(canonical, canonical_revision=canonical_revision)
             if pending_index:
                 warehouse.append_index_bars(pending_index)
             self._write_json(self.watermark_path, {k: asdict(v) for k, v in watermarks.items()})
@@ -392,7 +408,11 @@ class SourceSyncOrchestrator:
                 dq_result=dq, last_accepted_market_date=expected.isoformat(), last_successful_sync=now,
                 failure_reason=None, mode=SyncMode.LIVE.value if fetched else SyncMode.CACHE_ONLY.value,
                 actionable=True, status=SyncStatus.READY.value, cache_accepted=True,
-                degraded_mode=False, freshness_key=key)
+                degraded_mode=False, freshness_key=key,
+                canonical_revision=canonical_revision,
+                expected_session_status="COMPLETE", lineage_status="COMPLETE",
+                universe_status="CURRENT_COMPLETE", corporate_action_status="CLEAR",
+                reconciliation_status="DISAGREEMENT" if "WARN" in dq.values() else "CLEAR")
             # The new watermarks define a new deterministic state key.
             new_keyed = {c: watermarks[f"{providers[c]}:{c}"] for c in required}
             report = SyncReport(**{**asdict(report), "freshness_key": self._freshness_key(required, expected, providers, new_keyed)})
