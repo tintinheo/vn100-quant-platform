@@ -50,6 +50,7 @@
 | **3.5.25** | **2026-09-15** | **Added `vnquant.recommendations.service` as a strict publication boundary with complete recommendation fields and fail-closed data/strategy/forecast/DQ/execution/risk gates. Offline tested only; no provider admission/live-validation change.** |
 | **3.5.26** | **2026-09-15** | **Implemented lazy environment-first/Streamlit-secret DNSE credential injection and regression coverage proving redacted missing credentials, DOCTOR_PASSED non-selectability, and force-refresh no-fallback. Offline tested only; DNSE remains CANDIDATE and no live evidence/admission was produced.** |
 | **3.5.27** | **2026-09-15** | **Implemented typed deserialization and fail-closed lifecycle replay for packaged admission records, with regressions for approved restoration, failed doctor evidence, and failed reconciliation evidence. No credentials were available; DNSE remains CANDIDATE / NOT LIVE VALIDATED.** |
+| **3.5.28** | **2026-09-15** | **Added an explicit DQ execution state and presentation model so availability/configuration/transport failures do not masquerade as failed validation; added six-state UI contract coverage. Offline tested only; provider admission/live-validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -2065,6 +2066,8 @@ startup
 The UI must display `data_as_of`, `last_sync_at`, `provider_id`, `sync_mode`, and DQ status.
 
 Both `src/app.py` startup and direct `src/vnquant/jobs/pipeline.py` invocation must consume the governed synchronization result before loading bars or running features. When neither an admitted provider nor a policy-accepted cache exists, the persisted and published status is `NO_ADMITTED_PROVIDER`; feature, signal, candidate, and recommendation generation is blocked. A permitted cache result exposes its provider, age, last successful synchronization, DQ status, cache-acceptance decision, and degraded mode. Blocked publication removes older candidate/sector artifacts so they cannot be mistaken for current output. No CSV, synthetic, CafeF, or undocumented source is selected implicitly.
+
+`SyncReport.dq_status` represents execution/outcome of DQ independently from sync status. It is `NOT_RUN` when selection, credentials, or transport fail before validation; it is `FAIL` only when fetched data reaches validation and a blocking result is produced. A no-admitted-provider report persists `mode=FAILED`, `status=NO_ADMITTED_PROVIDER`, `provider_id=null`, unavailable data/sync timestamps, `cache_accepted=false`, `actionable=false`, and the DNSE Source Admission next action. The UI presentation model must render those fields without synthesizing DQ failure and must cover no provider, missing credentials, fetch failure, blocking DQ, stale accepted cache, and success.
 
 ## 26.7. Manual importer role
 

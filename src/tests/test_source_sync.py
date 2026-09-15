@@ -159,6 +159,12 @@ def test_no_admitted_provider_fails_closed(tmp_path):
     report = SourceSyncOrchestrator(tmp_path, registry=ProviderRegistry()).sync()
     assert report.failure_reason == "NO_ADMITTED_PROVIDER"
     assert report.status == SyncStatus.NO_ADMITTED_PROVIDER.value
+    assert report.mode == SyncMode.FAILED.value
+    assert report.dq_status == "NOT_RUN"
+    assert report.provider_id is None
+    assert report.data_as_of is None
+    assert report.last_sync_at is None
+    assert report.next_action == "Configure and complete Source Admission for DNSE."
     assert not report.actionable
 
 
@@ -229,6 +235,7 @@ def test_unusable_cache_does_not_bypass_provider_gate(tmp_path):
 def test_manual_file_is_not_required_for_normal_startup(tmp_path):
     report = SourceSyncOrchestrator(tmp_path, registry=ProviderRegistry()).sync()
     assert report.mode == SyncMode.FAILED.value
+    assert report.dq_status == "NOT_RUN"
     assert not list(tmp_path.glob("*.csv"))
 
 
@@ -327,6 +334,7 @@ def test_failed_batch_does_not_publish_partially_accepted_canonical_data(tmp_pat
     ).sync()
 
     assert report.mode == SyncMode.FAILED.value
+    assert report.dq_status == "FAIL"
     assert report.raw_snapshot_ids  # rejected evidence is still retained
     assert not (tmp_path / "parquet" / "canonical_bars.parquet").exists()
     assert not list((tmp_path / "parquet" / "bars").glob("*.parquet"))

@@ -24,6 +24,7 @@
 - Runtime fetch policy: every run checks required-capability state, but network I/O occurs only for stale, incomplete, revision-window, or explicitly forced capabilities. Admitted DNSE is preferred without multi-provider fan-out; Vietstock still requires contract/capability admission and CafeF remains disabled except for explicit rights-permitted sampled validation.
 - Canonical ingestion lineage: provider/file boundaries return exact raw bytes plus request/import metadata; current universe, price, official index, sector metadata and authorized manual imports require a persisted immutable source snapshot before canonical publication. Canonical bars are the sole ingested price store. Offline tested only.
 - Data quality: one canonical service now evaluates ingestion/storage observations, persists revision-linked results and synchronization history, and applies the BRD's `[D]` confidence cap (70) and actionable block threshold (50).
+- Synchronization status semantics: availability/configuration/transport failures use DQ `NOT_RUN`; DQ `FAIL` is reserved for validation that ran and blocked fetched data. The UI publishes an explicit primary message and next action while retaining fail-closed recommendation gating.
 - Real-data validation: **NOT YET PERFORMED**.
 - Parameter governance: configurable analytics/runtime thresholds are packaged in versioned `src/vnquant/config/quant_parameters.v1.yaml`; unverified defaults are `[D] [GUESS]` with explicit calibration or verification requirements, while structural identities remain `[S]`. Offline tested only.
 - Regime index data: canonical official VN-Index/VN100 OHLC and turnover now have immutable raw-snapshot lineage. The cap and equal-weight legs are independent; absent/stale official index data is exposed as degraded and cannot produce a bull classification. Offline tested only; no index feed is live validated/admitted.
@@ -79,6 +80,7 @@ Do **not** create new versioned document filenames or `LATEST` aliases. Git hist
 | **3.5 (credential/no-fallback verification)** | **2026-09-15** | **Connected environment-first or Streamlit-managed DNSE secrets without storing values and added explicit candidate, doctor-only, redaction, and forced-refresh no-fallback regressions. Offline tested only; DNSE remains CANDIDATE / NOT LIVE VALIDATED.** |
 
 | **3.5 (admission-record restoration)** | **2026-09-15** | **Packaged post-candidate provider states now restore only through typed evidence and replayed lifecycle gates. DNSE remains CANDIDATE / NOT LIVE VALIDATED because credentials and required live/cross-source evidence are unavailable.** |
+| **3.5 (sync/DQ status semantics)** | **2026-09-15** | **Separated synchronization failure from DQ execution/outcome, added actionable UI guidance, and covered six governed UI states. Offline tested only; no provider admission/live-validation change.** |
 
 ## Historical-artifact isolation (2026-09-14)
 

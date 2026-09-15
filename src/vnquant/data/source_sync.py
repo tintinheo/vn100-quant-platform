@@ -43,6 +43,15 @@ class SyncStatus(str, Enum):
     NO_ADMITTED_PROVIDER = "NO_ADMITTED_PROVIDER"
 
 
+class DQStatus(str, Enum):
+    """Whether validation ran, rather than whether synchronization succeeded."""
+
+    NOT_RUN = "NOT_RUN"
+    PASS = "PASS"
+    WARN = "WARN"
+    FAIL = "FAIL"
+
+
 @dataclass(frozen=True)
 class FreshnessPolicy:
     """Policy for one independently refreshed provider capability."""
@@ -107,6 +116,7 @@ class SyncReport:
     sector_status: str = "NOT_EVALUATED"
     corporate_action_status: str = "UNKNOWN"
     reconciliation_status: str = "UNKNOWN"
+    next_action: str | None = None
 
     @classmethod
     def from_dict(cls, value: dict) -> "SyncReport":
@@ -133,6 +143,7 @@ class SyncReport:
         value.setdefault("sector_status", "NOT_EVALUATED")
         value.setdefault("corporate_action_status", "UNKNOWN")
         value.setdefault("reconciliation_status", "UNKNOWN")
+        value.setdefault("next_action", None)
         return cls(**value)
 
 
@@ -490,7 +501,19 @@ class SourceSyncOrchestrator:
         else:
             mode, status = SyncMode.FAILED.value, (SyncStatus.NO_ADMITTED_PROVIDER.value
                 if reason.startswith("NO_ADMITTED_PROVIDER") else SyncStatus.SYNC_FAILED.value)
-            provider_id, market_date, dq_status, last_sync = None, None, "FAIL", None
+            provider_id, market_date, last_sync = None, None, None
+            # A transport/configuration failure is not a failed DQ evaluation.
+            # FAIL is reserved for a blocking result produced by validation.
+            dq_status = (DQStatus.FAIL.value if "DQ failed" in reason
+                         else DQStatus.NOT_RUN.value)
+        if reason.startswith("NO_ADMITTED_PROVIDER"):
+            next_action = "Configure and complete Source Admission for DNSE."
+        elif "credential" in reason.lower():
+            next_action = "Configure DNSE market-data credentials, then retry synchronization."
+        elif dq_status == DQStatus.FAIL.value:
+            next_action = "Review the blocking data-quality findings before retrying synchronization."
+        else:
+            next_action = "Retry synchronization after resolving the provider failure."
         return self._persist(self._make_report(started, expected=expected,
             required_capabilities=tuple(providers) or ("daily_ohlcv",), provider_id=provider_id,
             providers=providers, fresh_before=False, remote_fetch_performed=fetched,
@@ -498,4 +521,5 @@ class SourceSyncOrchestrator:
             raw_snapshot_ids=tuple(snapshots or ()), canonical_rows_written=0, canonical_changes={},
             dq_status=dq_status, dq_score=(previous.dq_score if accepted else 0), dq_result={}, last_accepted_market_date=market_date,
             last_successful_sync=last_sync, failure_reason=reason, mode=mode, actionable=False,
-            status=status, cache_accepted=accepted, degraded_mode=accepted, freshness_key=key))
+            status=status, cache_accepted=accepted, degraded_mode=accepted, freshness_key=key,
+            next_action=next_action))

@@ -50,6 +50,7 @@
 | **3.5.25** | **2026-09-15** | **Implemented the complete fail-closed recommendation contract with future attempt dates, tick/band/gap/liquidity/cost/lot/settlement/portfolio gates, cost-adjusted payoff fields, DQ/forecast status and immutable source lineage. Offline tested only; strategies and forecasts remain suppressed without admitted real data.** |
 | **3.5.26** | **2026-09-15** | **Wired DNSE read-only credentials from environment variables or Streamlit managed secrets without persisting/logging values, and added regressions for redacted missing credentials, candidate/doctor isolation, and force-refresh no-fallback. Offline tested only; DNSE remains CANDIDATE and no live validation/admission occurred.** |
 | **3.5.27** | **2026-09-15** | **Hardened packaged Source Admission restoration: YAML validation evidence is typed explicitly and any configured post-candidate state is reached only by replaying every lifecycle gate. A state label alone cannot admit DNSE. Credentials were unavailable, so DNSE remains CANDIDATE / NOT LIVE VALIDATED and no VN100 or cross-source claim was made.** |
+| **3.5.28** | **2026-09-15** | **Separated synchronization availability from data-quality outcomes: no-source, credential, and provider-fetch failures now report DQ `NOT_RUN`, while DQ `FAIL` is reserved for validation that ran and blocked data. Added explicit status guidance and six-state UI regressions. Offline tested only; admission/live-validation unchanged.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 
@@ -1892,6 +1893,8 @@ If an ADMITTED provider is temporarily unavailable but the local canonical wareh
 If no acceptable cached state exists, real-data analysis fails closed.
 
 Application startup and direct pipeline execution must consume the governed synchronization result before feature, signal, candidate, or recommendation generation. If neither an admitted provider nor a policy-accepted cache exists, they persist, publish, and display `NO_ADMITTED_PROVIDER`; no CSV, synthetic, CafeF, or undocumented source may be substituted implicitly. When policy permits cache use, the result exposes provider, data age, last successful synchronization, DQ status, cache acceptance, and degraded mode. Older actionable artifacts must be hidden or removed when the gate blocks a run.
+
+When no provider is selected and no market data is fetched, synchronization remains `FAILED` and recommendations remain blocked, but DQ is `NOT_RUN` (or equivalently `UNAVAILABLE`), never `FAIL`. The primary UI message is `NO_ADMITTED_PROVIDER — no provider is eligible for real-data synchronization.` and the next action is `Configure and complete Source Admission for DNSE.` Provider is `none`, data-as-of is `unavailable`, last sync is `never`, and cache accepted is `no`. DQ `FAIL` is reserved for fetched data on which validation ran and produced a blocking result.
 
 ## 28.7. Acceptance criteria
 

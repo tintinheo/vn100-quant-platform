@@ -49,6 +49,7 @@
 | **3.5.25** | **2026-09-15** | **Implement contract recommendation fail-closed đầy đủ: attempt date tương lai; gate tick/band/gap/liquidity/cost/lot/settlement/portfolio; payoff sau cost; trạng thái DQ/forecast và source lineage bất biến. Chỉ offline-tested; strategy/forecast vẫn suppressed khi chưa có dữ liệu thật admitted.** |
 | **3.5.26** | **2026-09-15** | **Kết nối credential DNSE read-only từ environment variable hoặc Streamlit managed secrets mà không persist/log giá trị; thêm regression cho credential thiếu được redact, tách biệt candidate/doctor và force-refresh không fallback. Chỉ offline-tested; DNSE vẫn là CANDIDATE và chưa live validation/admission.** |
 | **3.5.27** | **2026-09-15** | **Siết việc khôi phục Source Admission từ package: validation evidence trong YAML được chuyển kiểu rõ ràng và mọi trạng thái sau candidate chỉ đạt được bằng cách chạy lại toàn bộ lifecycle gate. Chỉ sửa nhãn state không thể admit DNSE. Không có credential nên DNSE vẫn CANDIDATE / NOT LIVE VALIDATED; chưa claim VN100 hoặc cross-source.** |
+| **3.5.28** | **2026-09-15** | **Tách trạng thái khả dụng synchronization khỏi kết quả DQ: lỗi không có nguồn, credential và provider-fetch dùng DQ `NOT_RUN`; DQ `FAIL` chỉ dành cho validation đã chạy và chặn dữ liệu. Bổ sung hướng dẫn trạng thái và regression UI cho sáu trường hợp. Chỉ offline-tested; admission/live-validation không đổi.** |
 
 **Governance:** sau mỗi research/assessment/implementation discovery có thay đổi material, phải cập nhật BRD + BRD-VI + SRD trong cùng work cycle, thêm một dòng Change Log vào mỗi file và cập nhật `CURRENT_BASELINE.md`. Nội dung suy luận/chưa có nguồn phải gắn `[GUESS]`.
 
@@ -1330,6 +1331,8 @@ Nếu provider ADMITTED lỗi tạm thời nhưng local warehouse còn snapshot 
 Nếu không có cache đủ điều kiện, real-data analysis phải fail closed.
 
 `src/app.py` và direct pipeline đều phải kiểm tra synchronization result trước khi tạo feature, signal, candidate hay recommendation. Nếu không có provider admitted và cũng không có cache được policy chấp nhận, phải persist, publish và hiển thị `NO_ADMITTED_PROVIDER`; không được dùng ngầm CSV, synthetic, CafeF hoặc nguồn undocumented. Nếu policy cho phép cache, kết quả phải hiển thị provider, tuổi dữ liệu, lần đồng bộ thành công gần nhất, DQ status, cache-acceptance và degraded mode; artifact actionable cũ phải bị ẩn hoặc xóa.
+
+Khi không chọn được provider và không fetch dữ liệu thị trường, synchronization vẫn là `FAILED` và recommendation vẫn bị chặn, nhưng DQ phải là `NOT_RUN` (hoặc tương đương `UNAVAILABLE`), không phải `FAIL`. UI hiển thị chính `NO_ADMITTED_PROVIDER — no provider is eligible for real-data synchronization.` và next action `Configure and complete Source Admission for DNSE.` Provider là `none`, data-as-of là `unavailable`, last sync là `never`, cache accepted là `no`. Chỉ dùng DQ `FAIL` khi đã có dữ liệu, validation đã chạy và trả về kết quả blocking.
 
 ## 28.7. Acceptance criteria
 
