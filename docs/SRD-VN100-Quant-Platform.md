@@ -49,6 +49,7 @@
 | **3.5.24** | **2026-09-15** | **Added a pre-feature consumer gate for accepted `SyncReport`/canonical revision and complete governance-status publication on market/candidate artifacts. Offline tested only; admission/live-validation unchanged.** |
 | **3.5.25** | **2026-09-15** | **Added `vnquant.recommendations.service` as a strict publication boundary with complete recommendation fields and fail-closed data/strategy/forecast/DQ/execution/risk gates. Offline tested only; no provider admission/live-validation change.** |
 | **3.5.26** | **2026-09-15** | **Implemented lazy environment-first/Streamlit-secret DNSE credential injection and regression coverage proving redacted missing credentials, DOCTOR_PASSED non-selectability, and force-refresh no-fallback. Offline tested only; DNSE remains CANDIDATE and no live evidence/admission was produced.** |
+| **3.5.27** | **2026-09-15** | **Implemented typed deserialization and fail-closed lifecycle replay for packaged admission records, with regressions for approved restoration, failed doctor evidence, and failed reconciliation evidence. No credentials were available; DNSE remains CANDIDATE / NOT LIVE VALIDATED.** |
 
 **Governance:** after every material research/assessment/implementation discovery, update BRD + BRD-VI + SRD in the same work cycle, append one row to each document's Change Log, and update `CURRENT_BASELINE.md`. Unsourced/inferred statements must be marked `[GUESS]`.
 

@@ -21,6 +21,7 @@ from vnquant.data.providers import (
     VietstockDataFeedProvider,
 )
 from vnquant.data.providers.common import ProviderConfigurationError
+from vnquant.config.provider_configuration import ProviderConfiguration
 
 
 class SuccessfulDNSEClient:
@@ -60,6 +61,80 @@ def test_default_implementations_are_registered_but_not_admitted():
     ).evidence.missing_requirements(DNSEProvider.capabilities)
     with pytest.raises(NoAdmittedProvider):
         registry.select(provider_id="dnse_openapi", capability="daily_ohlcv")
+
+
+def _configured_dnse(state: str, *, doctor_passed: bool = True,
+                     cross_validated: bool = True) -> ProviderConfiguration:
+    validations = [
+        {"check": "doctor", "passed": doctor_passed,
+         "evidence_reference": "evidence/dnse-doctor.json",
+         "validated_at": "2026-09-15"},
+        {"check": "cross_validation", "passed": cross_validated,
+         "evidence_reference": "evidence/dnse-reconciliation.json",
+         "validated_at": "2026-09-15"},
+    ]
+    return ProviderConfiguration(
+        provider_id="dnse_openapi", config_version="test-approved-record",
+        enabled=True, role="leading_read_only_candidate", state=state,
+        adapter="dnse",
+        credentials={"api_key_reference": "DNSE_API_KEY",
+                     "api_secret_reference": "DNSE_API_SECRET"},
+        evidence={
+            "record_version": "test-admission-v1",
+            "access_basis": "fixture authorized access",
+            "licence_reference": "fixture licence",
+            "capability_definitions": {
+                capability: "fixture verified capability"
+                for capability in DNSEProvider.capabilities
+            },
+            "schema_and_units": "fixture schemas and units",
+            "timezone_date_semantics": "fixture timezone and exchange date",
+            "raw_adjusted_policy": "fixture raw policy",
+            "revision_behavior": "fixture revision observations",
+            "quotas": "fixture quotas",
+            "history_depth": "fixture history coverage",
+            "universe_semantics": "fixture official VN100 reconciliation",
+            "lineage_method": "immutable raw fixture snapshots",
+            "validation_results": validations,
+            "owner": "fixture data owner",
+            "reviewed_at": "2026-09-15",
+            "next_review_at": "2026-12-15",
+        },
+    )
+
+
+def test_default_registry_replays_approved_admission_record(monkeypatch):
+    monkeypatch.setattr(
+        "vnquant.config.provider_configurations",
+        lambda: (_configured_dnse("ADMITTED"),),
+    )
+
+    registry = default_provider_registry()
+
+    assert registry.registration("dnse_openapi").state is ProviderState.ADMITTED
+    assert registry.admitted_provider_ids("daily_ohlcv") == ("dnse_openapi",)
+
+
+@pytest.mark.parametrize(
+    ("doctor_passed", "cross_validated", "message"),
+    [
+        (False, True, "passing 'doctor'"),
+        (True, False, "passing 'cross_validation'"),
+    ],
+)
+def test_configured_admission_record_fails_closed_on_failed_gates(
+    monkeypatch, doctor_passed, cross_validated, message
+):
+    monkeypatch.setattr(
+        "vnquant.config.provider_configurations",
+        lambda: (_configured_dnse(
+            "ADMITTED", doctor_passed=doctor_passed,
+            cross_validated=cross_validated,
+        ),),
+    )
+
+    with pytest.raises(ProviderNotAllowed, match=message):
+        default_provider_registry()
 
 
 def test_dnse_credentials_resolve_from_environment_without_storing_values(monkeypatch):
