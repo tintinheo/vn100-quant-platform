@@ -14,6 +14,8 @@ from vnquant.data.provider_registry import (
 )
 from vnquant.data.providers import (
     CafeFReferenceProvider,
+    DNSECredentialSource,
+    DNSECredentials,
     DNSEProvider,
     VietstockDataFeedContract,
     VietstockDataFeedProvider,
@@ -47,8 +49,40 @@ def test_default_implementations_are_registered_but_not_admitted():
     assert registry.registration("vietstock_datafeed").state is ProviderState.CANDIDATE
     assert registry.registration("cafef_reference").state is ProviderState.RESEARCH_ONLY
     assert registry.admitted_provider_ids("daily_ohlcv") == ()
+    assert registry.registration("dnse_openapi").config_version == "1.0.0"
+    assert registry.registration("dnse_openapi").role == "leading_read_only_candidate"
+    assert registry.registration("dnse_openapi").enabled is True
+    assert registry.registration("vietstock_datafeed").enabled is False
+    assert registry.registration("cafef_reference").enabled is False
+    assert registry.registration("dnse_openapi").evidence.record_version == "1.0.0"
+    assert "schema_and_units" in registry.registration(
+        "dnse_openapi"
+    ).evidence.missing_requirements(DNSEProvider.capabilities)
     with pytest.raises(NoAdmittedProvider):
         registry.select(provider_id="dnse_openapi", capability="daily_ohlcv")
+
+
+def test_dnse_credentials_resolve_from_environment_without_storing_values(monkeypatch):
+    monkeypatch.setenv("DNSE_API_KEY", "fake-key")
+    monkeypatch.setenv("DNSE_API_SECRET", "fake-secret")
+    source = DNSECredentialSource("DNSE_API_KEY", "DNSE_API_SECRET")
+
+    assert source.resolve() == DNSECredentials("fake-key", "fake-secret")
+    assert "fake-secret" not in repr(source)
+
+
+def test_dnse_credentials_can_resolve_from_approved_secret_store():
+    secrets = {"key-ref": "fake-key", "secret-ref": "fake-secret"}
+    source = DNSECredentialSource("key-ref", "secret-ref", secret_store=secrets.get)
+
+    assert source.resolve() == DNSECredentials("fake-key", "fake-secret")
+
+
+def test_disabled_vietstock_cannot_be_promoted_even_with_future_evidence():
+    registry = default_provider_registry()
+
+    with pytest.raises(ProviderNotAllowed, match="disabled provider"):
+        registry.transition("vietstock_datafeed", ProviderState.DOCTOR_PASSED)
 
 
 def test_dnse_http_success_does_not_promote_admission():

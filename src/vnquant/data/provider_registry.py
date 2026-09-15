@@ -61,6 +61,7 @@ class AdmissionEvidence:
     act as permissive defaults. ``missing_requirements`` is the fail-closed gate.
     """
 
+    record_version: str = "unversioned"
     access_basis: str = ""
     licence_reference: str = ""
     capability_definitions: Mapping[str, str] = field(default_factory=dict)
@@ -69,6 +70,8 @@ class AdmissionEvidence:
     raw_adjusted_policy: str = ""
     revision_behavior: str = ""
     quotas: str = ""
+    history_depth: str = ""
+    universe_semantics: str = ""
     lineage_method: str = ""
     validation_results: tuple[ValidationResult, ...] = ()
     owner: str = ""
@@ -90,6 +93,8 @@ class AdmissionEvidence:
             "raw_adjusted_policy": self.raw_adjusted_policy,
             "revision_behavior": self.revision_behavior,
             "quotas": self.quotas,
+            "history_depth": self.history_depth,
+            "universe_semantics": self.universe_semantics,
             "lineage_method": self.lineage_method,
             "validation_results": self.validation_results,
             "owner": self.owner,
@@ -120,6 +125,9 @@ class ProviderRegistration:
     provider: MarketDataProvider
     state: ProviderState
     evidence: AdmissionEvidence
+    config_version: str = "unversioned"
+    enabled: bool = True
+    role: str = "unspecified"
 
 
 class ProviderRegistry:
@@ -158,13 +166,20 @@ class ProviderRegistry:
         *,
         evidence: AdmissionEvidence,
         state: ProviderState = ProviderState.CANDIDATE,
+        config_version: str = "unversioned",
+        enabled: bool = True,
+        role: str = "unspecified",
     ) -> None:
         provider_id = self._provider_id(provider)
         if provider_id in self._RETIRED_PROVIDER_IDS or provider_id.startswith("ssi_"):
             raise ProviderNotAllowed(f"retired provider {provider_id!r} cannot be registered")
         if state not in {ProviderState.CANDIDATE, ProviderState.RESEARCH_ONLY}:
             raise ProviderNotAllowed("new providers must start as CANDIDATE or RESEARCH_ONLY")
-        self._registrations[provider_id] = ProviderRegistration(provider, state, evidence)
+        if not evidence.record_version.strip() or not config_version.strip():
+            raise ProviderNotAllowed("provider configuration and evidence versions are required")
+        self._registrations[provider_id] = ProviderRegistration(
+            provider, state, evidence, config_version, enabled, role
+        )
 
     def update_evidence(self, provider_id: str, evidence: AdmissionEvidence) -> None:
         registration = self.registration(provider_id)
@@ -194,6 +209,8 @@ class ProviderRegistry:
         registration: ProviderRegistration, target: ProviderState
     ) -> None:
         provider = registration.provider
+        if not registration.enabled:
+            raise ProviderNotAllowed("a disabled provider cannot enter admission states")
         if provider.data_mode is not DataMode.REAL:
             raise ProviderNotAllowed("synthetic/test providers cannot enter admission states")
         if getattr(provider, "reference_only", False):
@@ -225,6 +242,7 @@ class ProviderRegistry:
             provider_id
             for provider_id, registration in self._registrations.items()
             if registration.state is ProviderState.ADMITTED
+            and registration.enabled
             and not registration.evidence.missing_requirements(
                 registration.provider.capabilities
             )
@@ -277,34 +295,46 @@ class ProviderRegistry:
 
 
 def default_provider_registry() -> ProviderRegistry:
-    """Return implemented providers with explicit evidence gaps and no admission."""
-    from .providers import CafeFReferenceProvider, DNSEProvider, VietstockDataFeedProvider
+    """Build the fail-closed registry from the packaged, versioned policy file."""
+    from vnquant.config import provider_configurations
+    from .providers import (
+        CafeFReferenceProvider,
+        DNSECredentialSource,
+        DNSEProvider,
+        VietstockDataFeedProvider,
+    )
 
     registry = ProviderRegistry()
-    registry.register(
-        DNSEProvider(),
-        evidence=AdmissionEvidence(
-            access_basis="official public OpenAPI documentation",
-            licence_reference="DNSE API Platform terms/access agreement review pending [GUESS]",
-            capability_definitions={
-                "daily_ohlcv": "documented OHLC endpoint; live schema unverified [GUESS]",
-                "current_index_members": "instrument index filter; VN100 literal unverified [GUESS]",
-                "index_daily_ohlct": "documented OHLC endpoint with INDEX bar type/schema unverified [GUESS]",
-            },
-            owner="data-platform owner",
+    adapters = {
+        "dnse": lambda record: DNSEProvider(
+            credential_source=DNSECredentialSource(
+                record.credentials["api_key_reference"],
+                record.credentials["api_secret_reference"],
+            )
         ),
-    )
-    registry.register(VietstockDataFeedProvider(), evidence=AdmissionEvidence())
-    registry.register(
-        CafeFReferenceProvider(),
-        state=ProviderState.RESEARCH_ONLY,
-        evidence=AdmissionEvidence(
-            access_basis="public reference pages; automated production rights unverified [GUESS]",
-            licence_reference="CafeF page reference-use notice",
-            capability_definitions={
-                "reference_daily_ohlcv": "explicit opt-in HTML reference comparison"
-            },
-            owner="data-platform owner",
-        ),
-    )
+        "vietstock": lambda record: VietstockDataFeedProvider(),
+        "cafef": lambda record: CafeFReferenceProvider(allow_reference_source=False),
+    }
+    for record in provider_configurations():
+        try:
+            provider = adapters[record.adapter](record)
+            state = ProviderState(record.state)
+        except (KeyError, ValueError) as error:
+            raise ProviderNotAllowed(
+                f"invalid versioned configuration for {record.provider_id!r}"
+            ) from error
+        if provider.provider_id != record.provider_id:
+            raise ProviderNotAllowed(f"configured provider id {record.provider_id!r} mismatches adapter")
+        evidence_fields = AdmissionEvidence.__dataclass_fields__
+        evidence = AdmissionEvidence(
+            **{key: value for key, value in record.evidence.items() if key in evidence_fields}
+        )
+        registry.register(
+            provider,
+            state=state,
+            evidence=evidence,
+            config_version=record.config_version,
+            enabled=record.enabled,
+            role=record.role,
+        )
     return registry

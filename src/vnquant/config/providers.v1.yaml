@@ -1,0 +1,58 @@
+schema_version: 1
+config_version: "1.0.0"
+providers:
+  dnse_openapi:
+    enabled: true
+    role: leading_read_only_candidate
+    state: CANDIDATE
+    adapter: dnse
+    credentials:
+      source: environment_or_approved_secret_store
+      api_key_reference: DNSE_API_KEY
+      api_secret_reference: DNSE_API_SECRET
+    evidence:
+      record_version: "1.0.0"
+      access_basis: official public OpenAPI documentation
+      licence_reference: "DNSE API Platform terms/access agreement review pending [GUESS]"
+      capability_definitions:
+        daily_ohlcv: "documented OHLC endpoint; live schema unverified [GUESS]"
+        current_index_members: "instrument index filter; VN100 literal and current membership unverified [GUESS]"
+        index_daily_ohlct: "documented OHLC endpoint; INDEX type, schema and turnover units unverified [GUESS]"
+      schema_and_units: ""
+      timezone_date_semantics: ""
+      raw_adjusted_policy: ""
+      revision_behavior: ""
+      quotas: ""
+      history_depth: ""
+      universe_semantics: ""
+      lineage_method: immutable raw payload plus request metadata and SHA-256
+      owner: data-platform owner
+      reviewed_at: null
+      next_review_at: null
+      validation_results: []
+
+  vietstock_datafeed:
+    enabled: false
+    role: licensed_alternative_candidate
+    state: CANDIDATE
+    adapter: vietstock
+    disabled_reason: authorized DataFeed contract is incomplete
+    evidence:
+      record_version: "1.0.0"
+      capability_definitions: {}
+      validation_results: []
+
+  cafef_reference:
+    enabled: false
+    role: reference_only
+    state: RESEARCH_ONLY
+    adapter: cafef
+    disabled_reason: explicit rights-permitted reference validation only
+    evidence:
+      record_version: "1.0.0"
+      access_basis: "public reference pages; automated production rights unverified [GUESS]"
+      licence_reference: CafeF page reference-use notice
+      capability_definitions:
+        reference_daily_ohlcv: explicit opt-in HTML reference comparison
+      owner: data-platform owner
+      validation_results: []

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import json
+import os
 from typing import Any, Protocol
 
 import pandas as pd
@@ -18,6 +20,31 @@ class DNSEMarketDataClient(Protocol):
     def get_instruments(self, **kwargs: Any) -> Any: ...
 
     def get_ohlc(self, **kwargs: Any) -> Any: ...
+
+
+@dataclass(frozen=True, repr=False)
+class DNSECredentials:
+    api_key: str
+    api_secret: str
+
+
+class DNSECredentialSource:
+    """Resolve DNSE data credentials without embedding or logging their values."""
+
+    def __init__(self, api_key_reference: str, api_secret_reference: str, *, secret_store=None):
+        self.api_key_reference = api_key_reference
+        self.api_secret_reference = api_secret_reference
+        self.secret_store = secret_store
+
+    def resolve(self) -> DNSECredentials:
+        getter = self.secret_store or os.environ.get
+        api_key = getter(self.api_key_reference)
+        api_secret = getter(self.api_secret_reference)
+        if not api_key or not api_secret:
+            raise ProviderConfigurationError(
+                "DNSE read-only credentials are unavailable from the configured environment/secret store"
+            )
+        return DNSECredentials(str(api_key), str(api_secret))
 
 
 # [GUESS] Live DNSE resolution, accepted VN100 index-name literal, response
@@ -51,7 +78,8 @@ class DNSEProvider(MarketDataProvider):
         self,
         client: DNSEMarketDataClient | None = None,
         *,
-        client_factory: Callable[[], DNSEMarketDataClient] | None = None,
+        client_factory: Callable[[DNSECredentials], DNSEMarketDataClient] | None = None,
+        credential_source: DNSECredentialSource | None = None,
         now: Callable[[], datetime] | None = None,
         resolution: str | None = None,
         index_name: str | None = None,
@@ -60,6 +88,7 @@ class DNSEProvider(MarketDataProvider):
     ) -> None:
         self._client = client
         self._client_factory = client_factory
+        self._credential_source = credential_source
         self._now = now or (lambda: datetime.now(timezone.utc))
         self.resolution = resolution or str(parameter_value("provider.dnse_resolution"))
         self.index_name = index_name or str(parameter_value("provider.dnse_index_name"))
@@ -73,7 +102,9 @@ class DNSEProvider(MarketDataProvider):
                 raise ProviderConfigurationError(
                     "DNSE requires an injected official read-only SDK client/factory"
                 )
-            self._client = self._client_factory()
+            if self._credential_source is None:
+                raise ProviderConfigurationError("DNSE credential source is not configured")
+            self._client = self._client_factory(self._credential_source.resolve())
         return self._client
 
     @staticmethod
