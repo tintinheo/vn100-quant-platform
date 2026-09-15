@@ -27,14 +27,35 @@ def _official_cap_index(wh: Warehouse, latest_date) -> tuple[pd.Series, str, str
         return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "official index data absent"
     indexes = indexes.copy()
     indexes["trading_date"] = pd.to_datetime(indexes["timestamp"], utc=True).dt.date
-    # VN-Index is the BRD cap-weighted input; VN100 is accepted only when VN-Index is absent.
-    available = set(indexes.index_code.astype(str).str.upper())
-    code = "VNINDEX" if "VNINDEX" in available else ("VN100" if "VN100" in available else None)
+    required_lineage = {"provider", "raw_snapshot_id", "payload_sha256", "source_reference"}
+    if not required_lineage.issubset(indexes.columns):
+        return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "official index lineage incomplete"
+    accepted = []
+    for row in indexes.itertuples(index=False):
+        try:
+            metadata = wh._raw_snapshot_metadata(str(row.provider), str(row.raw_snapshot_id))
+        except (FileNotFoundError, OSError, ValueError, KeyError):
+            continue
+        if (metadata.get("payload_sha256") == row.payload_sha256 and
+                metadata.get("source_reference") == row.source_reference):
+            accepted.append(row)
+    indexes = pd.DataFrame(accepted, columns=indexes.columns)
+    if indexes.empty:
+        return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "no raw-lineaged official index observations"
+
+    # VN-Index is the BRD cap-weighted input. A fresh, accepted VN100 series is
+    # used only when VN-Index cannot supply the current expected session.
+    indexes["index_code"] = indexes.index_code.astype(str).str.upper()
+    code = next((candidate for candidate in ("VNINDEX", "VN100")
+                 if not indexes[(indexes.index_code == candidate) &
+                                (indexes.trading_date == latest_date)].empty), None)
     if code is None:
-        return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "VNINDEX/VN100 official series absent"
-    series = indexes[indexes.index_code.astype(str).str.upper() == code].sort_values("trading_date")
-    if series.trading_date.max() < latest_date:
-        return unavailable, "DEGRADED_PROXY_STALE", f"official {code} series stale"
+        available = set(indexes.index_code)
+        if not available.intersection({"VNINDEX", "VN100"}):
+            return unavailable, "DEGRADED_PROXY_UNAVAILABLE", "VNINDEX/VN100 official series absent"
+        present = "VNINDEX" if "VNINDEX" in available else "VN100"
+        return unavailable, "DEGRADED_PROXY_STALE", f"official {present} latest session missing"
+    series = indexes[indexes.index_code == code].sort_values("trading_date")
     for window in parameter_value("features.ma_windows"):
         series[f"ma{int(window)}"] = series.close.astype(float).rolling(int(window), min_periods=int(window)).mean()
     turnover_window = int(parameter_value("market.turnover_window"))
@@ -42,8 +63,6 @@ def _official_cap_index(wh: Warehouse, latest_date) -> tuple[pd.Series, str, str
     turnover = pd.to_numeric(series.turnover, errors="coerce")
     series["turnover_ratio"] = turnover / turnover.rolling(turnover_window, min_periods=turnover_min).mean()
     row = series[series.trading_date == latest_date]
-    if row.empty:
-        return unavailable, "DEGRADED_PROXY_STALE", f"official {code} latest session missing"
     return row.iloc[-1], f"OFFICIAL_{code}", None
 
 
