@@ -148,6 +148,17 @@ def test_candidate_cannot_promote_directly_to_admitted():
         registry.transition("licensed_feed", ProviderState.ADMITTED)
 
 
+def test_doctor_pass_alone_does_not_imply_admission():
+    registry = ProviderRegistry()
+    provider = StubProvider("licensed_feed")
+    registry.register(provider, evidence=complete_evidence(cross_validated=False))
+    registry.transition(provider.provider_id, ProviderState.DOCTOR_PASSED)
+
+    assert registry.registration(provider.provider_id).state is ProviderState.DOCTOR_PASSED
+    with pytest.raises(NoAdmittedProvider, match=NO_ADMITTED_PROVIDER):
+        registry.select(provider_id=provider.provider_id, capability="daily_ohlcv")
+
+
 def test_invalid_transition_and_suspension_require_revalidation_path():
     registry = ProviderRegistry()
     provider = StubProvider("licensed_feed")

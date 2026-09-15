@@ -37,9 +37,22 @@ class DNSECredentialSource:
         self.secret_store = secret_store
 
     def resolve(self) -> DNSECredentials:
-        getter = self.secret_store or os.environ.get
-        api_key = getter(self.api_key_reference)
-        api_secret = getter(self.api_secret_reference)
+        def value(reference: str):
+            environment_value = os.environ.get(reference)
+            if environment_value:
+                return environment_value
+            if self.secret_store is None:
+                return None
+            getter = self.secret_store.get if isinstance(self.secret_store, Mapping) else self.secret_store
+            try:
+                return getter(reference)
+            except (FileNotFoundError, KeyError):
+                # An unconfigured approved store is equivalent to a missing
+                # credential. Never expose its key name or underlying details.
+                return None
+
+        api_key = value(self.api_key_reference)
+        api_secret = value(self.api_secret_reference)
         if not api_key or not api_secret:
             raise ProviderConfigurationError(
                 "DNSE read-only credentials are unavailable from the configured environment/secret store"

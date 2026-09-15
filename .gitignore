@@ -5,3 +5,5 @@ build/
 dist/
 *.egg-info/
 .venv/
+.streamlit/secrets.toml
+src/.streamlit/secrets.toml
