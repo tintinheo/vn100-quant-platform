@@ -10,6 +10,7 @@ from vnquant.data.provider_registry import (
     default_provider_registry,
 )
 from vnquant.data.quality import quality_score, validate_bars
+from vnquant.data.providers.common import ProviderConfigurationError, ProviderResponseError
 from vnquant.config import parameter_value, parameters_version
 
 
@@ -27,6 +28,7 @@ def run(
     calendar_multiplier = int(parameter_value("doctor.calendar_day_multiplier"))
     sample_size = int(parameter_value("doctor.member_sample_size"))
     print(f"VNQuant Doctor v3.5 — admitted-provider preflight ({parameters_version()})")
+    provider = None
     try:
         provider = (registry or default_provider_registry()).select(
             provider_id=provider_id,
@@ -43,11 +45,15 @@ def run(
         )
         issues = validate_bars(frame)
         print(f"[3/3] QUALITY: score={quality_score(issues)} issues={[(x.severity, x.code) for x in issues]}")
-        provider.close()
         return 1 if any(issue.severity == "ERROR" for issue in issues) else 0
-    except ProviderRegistryError as error:
-        print(error)
+    except (ProviderRegistryError, ProviderConfigurationError, ProviderResponseError) as error:
+        # Expected governance/configuration/schema failures are operational
+        # doctor results, not tracebacks. They never promote provider state.
+        print(f"DOCTOR_FAILED: {error}")
         return 2
+    finally:
+        if provider is not None:
+            provider.close()
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # Provider Research Report — VN100 Data Sources
 
 **File:** `PROVIDER-RESEARCH-REPORT.md`  
-**Current internal revision:** **1.8 — 2026-09-14**
+**Current internal revision:** **1.9 — 2026-09-15**
 **Scope:** DNSE OpenAPI, Vietstock DataFeed, CafeF public data pages  
 **Mục tiêu:** tự động quét current VN100 + OHLCV cho trading/research app, không phụ thuộc manual CSV/XLSX.
 
@@ -20,6 +20,7 @@
 | **1.6** | **2026-09-14** | **Reconciled all canonical implementation-status statements with tracked repository contents: standalone `vn100_multisource_feed_v1` is absent; maintained `src/vnquant/` provider/sync implementation passes 99 offline tests. No provider evidence, admission, or live-validation change.** |
 | **1.7** | **2026-09-14** | **Clarified the runtime decision: synchronization checks do not imply unconditional three-provider calls. DNSE-first resolution remains admission/freshness-gated, Vietstock remains contract/capability-admission-gated, and CafeF remains disabled except for explicit rights-permitted sampled validation. No new provider evidence or status change.** |
 | **1.8** | **2026-09-14** | **Added a canonical index OHLC/turnover capability and raw lineage path for the DNSE candidate. The `INDEX` bar type, VNINDEX literal, live turnover field/schema/units remain `[GUESS]`; no new evidence, admission, or live-validation status.** |
+| **1.9** | **2026-09-15** | **Repeated the local/reachable-history/committed-archive artifact search without recovering `vn100_multisource_feed_v1`; reconfirmed the stable packaged equivalent and its complete integrated tests. Added controlled doctor failure/cleanup coverage; 126 tests passed offline. Historical standalone 10/10 remains withdrawn; provider evidence/admission/live-validation is unchanged.** |
 
 ## 1. Kết luận
 
