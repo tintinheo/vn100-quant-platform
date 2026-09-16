@@ -1,0 +1,193 @@
+name: Codex issue worker
+
+on:
+  issues:
+    types: [opened, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Existing GitHub issue number to execute"
+        required: true
+        type: string
+
+# The repository is public. Only the repository owner may supply task prompts
+# to this workflow. Untrusted public issue text must never reach an agent that
+# receives repository write access or an API-backed secret.
+concurrency:
+  group: codex-issue-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  implement:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' || github.actor == github.repository_owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve issue and build trusted task prompt
+        id: task
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_json="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}")"
+          issue_author="$(jq -r '.user.login' <<<"$issue_json")"
+          if [[ "$issue_author" != "$GITHUB_REPOSITORY_OWNER" ]]; then
+            echo "Refusing Codex task from non-owner issue author: $issue_author" >&2
+            exit 1
+          fi
+          issue_title="$(jq -r '.title' <<<"$issue_json")"
+          issue_url="$(jq -r '.html_url' <<<"$issue_json")"
+          issue_body="$(jq -r '.body // ""' <<<"$issue_json")"
+
+          branch="codex/issue-${ISSUE_NUMBER}-${GITHUB_RUN_ID}"
+          echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
+
+          cat > .codex-task.md <<EOF
+          Read AGENTS.md first and follow it as repository instructions.
+
+          You are the implementation agent for GitHub issue #${ISSUE_NUMBER}.
+          Work only on the requested issue. Do not broaden scope merely because
+          adjacent improvements are possible.
+
+          Issue: ${issue_title}
+          URL: ${issue_url}
+
+          --- issue body ---
+          ${issue_body}
+          --- end issue body ---
+
+          Requirements for this run:
+          - inspect the existing implementation before editing;
+          - implement the issue completely within its stated scope;
+          - preserve fail-closed provider governance and [GUESS] discipline;
+          - never add brokerage order execution or secrets;
+          - update stable BRD/BRD-VI/SRD/baseline/provider-research files only
+            when the issue creates a material product/architecture/provider change;
+          - add or update regression tests;
+          - run the relevant test suite;
+          - do not push, merge, or create a PR yourself; the workflow does that;
+          - do not fabricate live-data evidence, credentials, provider admission,
+            real-data validation, or production-alpha claims.
+
+          Finish with a concise implementation summary, tests executed, unresolved
+          limitations, and the actual data-validation status.
+          EOF
+
+          git switch -c "$branch"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Run Codex implementation agent
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":workspace"
+          prompt-file: .codex-task.md
+          effort: high
+
+      - name: Remove transient prompt
+        if: always()
+        run: rm -f .codex-task.md
+
+      - name: Run repository test suite
+        run: python -m pytest -q
+
+      - name: Detect changes
+        id: changes
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push agent changes
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ steps.task.outputs.branch }}
+          ISSUE_NUMBER: ${{ steps.task.outputs.issue_number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Codex: implement issue #${ISSUE_NUMBER}"
+          git push --set-upstream origin "$BRANCH"
+
+      - name: Open pull request
+        id: pr
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.task.outputs.branch }}
+          ISSUE_NUMBER: ${{ steps.task.outputs.issue_number }}
+          ISSUE_URL: ${{ steps.task.outputs.issue_url }}
+          CODEX_SUMMARY: ${{ steps.codex.outputs.final-message }}
+        shell: bash
+        run: |
+          body_file="$(mktemp)"
+          cat > "$body_file" <<EOF
+          Implements #${ISSUE_NUMBER}.
+
+          Source issue: ${ISSUE_URL}
+
+          ## Codex summary
+          ${CODEX_SUMMARY}
+
+          ## Automated verification
+          - \`python -m pytest -q\`
+
+          This PR was created by the trusted owner-only Codex issue worker.
+          Human review is still required before merge.
+          EOF
+          pr_url="$(gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Codex: implement issue #${ISSUE_NUMBER}" \
+            --body-file "$body_file")"
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+
+      - name: Report result on issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.task.outputs.issue_number }}
+          CHANGED: ${{ steps.changes.outputs.changed }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+          CODEX_SUMMARY: ${{ steps.codex.outputs.final-message }}
+        shell: bash
+        run: |
+          if [[ "$CHANGED" == "true" && -n "$PR_URL" ]]; then
+            gh issue comment "$ISSUE_NUMBER" --body "Codex implementation completed and tests passed. PR: $PR_URL"
+          elif [[ "$CHANGED" == "false" ]]; then
+            gh issue comment "$ISSUE_NUMBER" --body "Codex completed without repository changes. Summary:\n\n$CODEX_SUMMARY"
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "Codex issue worker did not complete successfully. Inspect workflow run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}."
+          fi
