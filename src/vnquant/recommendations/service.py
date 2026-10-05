@@ -51,7 +51,9 @@ class RecommendationRequest:
     # Optional attempt-session bar is evidence for feasibility, not permission
     # to record a fill in this recommendation contract.
     attempt_bar: Mapping[str, float] | None = None
-    independent_validation_status: str = "WARNING"
+    # New callers must supply an explicit reconciliation outcome. Omitting it
+    # must never silently preserve actionability after the P0.1 upgrade.
+    independent_validation_status: str = "UNAVAILABLE"
 
 
 @dataclass(frozen=True)
