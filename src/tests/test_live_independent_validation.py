@@ -15,6 +15,7 @@ from vnquant.data.provider_registry import (
 )
 from vnquant.data.source_sync import SourceSyncOrchestrator
 from vnquant.data.storage import Warehouse
+from vnquant.jobs.pipeline import run as run_pipeline
 
 
 class _FixtureProvider(MarketDataProvider):
@@ -231,3 +232,36 @@ def test_different_raw_price_units_are_quarantined_before_numeric_trust(tmp_path
     assert result.validation_status == "QUARANTINED"
     assert "RAW_PRICE_UNIT_MISMATCH" in result.issues
     assert not result.buy_sell_allowed
+
+
+def test_pipeline_blocks_artifacts_before_features_when_live_validation_quarantines(tmp_path):
+    primary, secondary = PrimaryProvider(), SecondaryProvider(close=10.8)
+    registry = _registry(primary, secondary)
+    orchestrator = SourceSyncOrchestrator(
+        tmp_path,
+        registry=registry,
+        today=lambda: date(2026, 9, 14),
+    )
+    validator = LiveIndependentValidationService(
+        tmp_path,
+        registry=registry,
+        provider_origins={
+            primary.provider_id: "origin-primary",
+            secondary.provider_id: "origin-secondary",
+        },
+    )
+    publish = tmp_path / "publish"
+
+    result = run_pipeline(
+        str(tmp_path),
+        str(publish),
+        sync_orchestrator=orchestrator,
+        independent_validator=validator,
+    )
+
+    assert result["block_reason"] == "INDEPENDENT_DATA_VALIDATION_FAILED"
+    assert result["independent_validation_status"] == "QUARANTINED"
+    assert result["candidate_count"] == 0
+    assert not result["actionable"]
+    assert not (publish / "candidates.csv").exists()
+    assert not (publish / "sector_scores.csv").exists()
