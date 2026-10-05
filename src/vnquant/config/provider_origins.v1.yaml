@@ -1,0 +1,15 @@
+schema_version: 1
+config_version: "provider-origins-v1-2026-10-05"
+providers:
+  dnse_openapi:
+    origin_id: "DNSE_OPENAPI"
+    independence_verified: false
+    evidence_reference: "[GUESS] Provider endpoint is known, but ultimate upstream market-data origin independence has not been evidenced."
+  vietstock_datafeed:
+    origin_id: "VIETSTOCK_DATAFEED"
+    independence_verified: false
+    evidence_reference: "[GUESS] Licensed DataFeed contract and upstream-origin evidence are not yet available."
+  cafef_reference:
+    origin_id: "CAFEF_PUBLIC_REFERENCE"
+    independence_verified: false
+    evidence_reference: "[GUESS] Public reference pages are not admitted production evidence and upstream-origin independence is unverified."
