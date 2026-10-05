@@ -137,6 +137,18 @@ class IndependentDataValidator:
             issues.append("OHLC_INCONSISTENT")
             blocking.add("OHLC_INCONSISTENT")
 
+        # Cross-source numerical comparison is meaningful only when every
+        # source is already normalized to the same explicit unit/semantics.
+        if len(sources) >= 2:
+            raw_units = {str(bar.raw_price_unit).strip().upper() for bar in bars}
+            semantics = {str(bar.price_semantics).strip().lower() for bar in bars}
+            if len(raw_units) != 1 or "UNKNOWN" in raw_units or "" in raw_units:
+                issues.append("RAW_PRICE_UNIT_MISMATCH")
+                blocking.add("RAW_PRICE_UNIT_MISMATCH")
+            if len(semantics) != 1 or "unknown" in semantics or "" in semantics:
+                issues.append("PRICE_SEMANTICS_MISMATCH")
+                blocking.add("PRICE_SEMANTICS_MISMATCH")
+
         price_disagreement = 0.0
         volume_disagreement = 0.0
         independent_overlap = False

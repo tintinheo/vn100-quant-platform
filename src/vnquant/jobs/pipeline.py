@@ -11,6 +11,7 @@ from vnquant.market.sector_rotation import compute_sector_scores
 from vnquant.recommendations.engine import detect_candidates
 from vnquant.data.sector_membership import apply_sector_mapping
 from vnquant.data.source_sync import SourceSyncOrchestrator, SyncReport, SyncStatus
+from vnquant.data.live_validation import LiveIndependentValidationService
 from vnquant.data.quality import ACTIONABLE_BLOCK_THRESHOLD, apply_dq_policy
 from vnquant.config import parameter_value
 from vnquant.portfolio import PortfolioContext, PortfolioRiskService
@@ -82,6 +83,18 @@ def _sync_metadata(sync: SyncReport, **overrides) -> dict:
     }
     values.update(overrides)
     return values
+
+
+def _independent_validation_metadata(report) -> dict:
+    return {
+        "independent_validation_status": report.validation_status,
+        "independent_validation_score": report.overall_quality_score,
+        "independent_validation_provider": report.validator_provider_id,
+        "independent_validation_sources": list(report.source_names),
+        "independent_validation_origins": list(report.independent_origins),
+        "independent_validation_issues": list(report.issues),
+        "independent_validation_report_id": report.report_id,
+    }
 
 
 def _publish_blocked_result(sync: SyncReport, publish_dir: str, reason: str | None = None,
@@ -181,15 +194,32 @@ def _validate_sync_for_analytics(sync: SyncReport, orchestrator: SourceSyncOrche
 
 def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = None,
         sync_orchestrator: SourceSyncOrchestrator | None = None,
-        portfolio_context: PortfolioContext | None = None) -> dict:
+        portfolio_context: PortfolioContext | None = None,
+        independent_validator: LiveIndependentValidationService | None = None) -> dict:
     orchestrator = sync_orchestrator or SourceSyncOrchestrator(data_dir)
     sync=orchestrator.sync({"daily_ohlcv"})
     wh=Warehouse(data_dir)
     acceptable, reason, gate_statuses = _validate_sync_for_analytics(sync, orchestrator, wh)
     if not acceptable:
         return _publish_blocked_result(sync,publish_dir,reason,**gate_statuses)
+
+    validation_service = independent_validator or LiveIndependentValidationService(
+        data_dir, registry=orchestrator.registry
+    )
+    independent = validation_service.validate(sync)
+    independent_statuses = _independent_validation_metadata(independent)
+    if not independent.buy_sell_allowed:
+        return _publish_blocked_result(
+            sync,
+            publish_dir,
+            "INDEPENDENT_DATA_VALIDATION_FAILED",
+            **gate_statuses,
+            **independent_statuses,
+        )
+
     panel, sector_mode, sector_warning=_load_panel(wh,sector_pit_path)
-    # No feature calculation occurs before the accepted sync/revision gate above.
+    # No feature calculation occurs before accepted sync/revision and
+    # independent-data gates above.
     panel = pd.concat((add_baseline_features(frame.copy())
                        for _, frame in panel.groupby("symbol", sort=True)), ignore_index=True)
     panel=add_cross_sectional_rs(panel)
@@ -227,11 +257,11 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
     else:
         candidates = candidates.iloc[0:0]
 
-    publication_status = _sync_metadata(sync, **gate_statuses,
+    publication_status = _sync_metadata(sync, **gate_statuses, **independent_statuses,
         universe_status=sync.universe_status, sector_status=sector_mode,
         confidence_cap=(dq_score if sync.degraded_mode else None))
     for key, value in publication_status.items():
-        candidates[key] = json.dumps(value, sort_keys=True) if isinstance(value, dict) else value
+        candidates[key] = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else value
 
     wh.write_table(sectors,"sector_scores")
     wh.write_table(candidates,"candidates")
@@ -255,7 +285,7 @@ def run(data_dir="data", publish_dir="publish", sector_pit_path: str | None = No
             "degraded_mode":bool(sync.degraded_mode or cap_mode.startswith("DEGRADED_PROXY")),
             "cache_accepted":sync.cache_accepted,
             "status":sync.status,"dq_score":dq_score,
-            "actionable":bool(sync.actionable and dq_actionable)}
+            "actionable":bool(sync.actionable and dq_actionable and independent.buy_sell_allowed)}
     market.update(publication_status)
     (out/"market.json").write_text(json.dumps(market,ensure_ascii=False,indent=2),encoding="utf-8")
     return market
