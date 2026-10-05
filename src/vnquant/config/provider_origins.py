@@ -17,13 +17,23 @@ class ProviderOriginEvidence:
 
 
 @lru_cache(maxsize=1)
-def provider_origin_evidence() -> tuple[ProviderOriginEvidence, ...]:
+def _document() -> dict:
     path = files("vnquant.config").joinpath("provider_origins.v1.yaml")
     document = yaml.safe_load(path.read_text(encoding="utf-8"))
     if document.get("schema_version") != 1:
         raise ValueError("unsupported provider-origin schema_version")
     if not str(document.get("config_version", "")).strip():
         raise ValueError("provider-origin config_version is required")
+    return document
+
+
+def provider_origin_config_version() -> str:
+    return str(_document()["config_version"])
+
+
+@lru_cache(maxsize=1)
+def provider_origin_evidence() -> tuple[ProviderOriginEvidence, ...]:
+    document = _document()
     records = []
     for provider_id, value in document.get("providers", {}).items():
         records.append(ProviderOriginEvidence(
