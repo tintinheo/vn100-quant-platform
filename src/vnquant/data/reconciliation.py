@@ -1,7 +1,7 @@
 """Independent-source OHLCV reconciliation for P0 data reliability.
 
 The validator never averages conflicting observations and never infers source
-independence from different provider names alone.  Independence must be backed
+independence from different provider names alone. Independence must be backed
 by explicit upstream-origin evidence supplied by provider governance.
 """
 from __future__ import annotations
@@ -46,21 +46,17 @@ class IndependentDataQualityResult:
 class IndependentDataValidator:
     """Reconcile canonical observations without hiding disagreement.
 
-    Thresholds are versioned [D][GUESS] parameters and must be calibrated from
-    admitted real-provider incidents before the application is promoted beyond
-    research/limited decision-support use.
+    By default the validator uses exact cross-source comparison. Optional
+    tolerances may be injected only by a governed caller. This strict baseline
+    avoids inventing an undocumented market-data tolerance inside the engine.
     """
 
     def __init__(self, *, price_tolerance: float | None = None,
                  volume_tolerance: float | None = None) -> None:
-        self.price_tolerance = float(
-            parameter_value("dq.cross_source_price_tolerance")
-            if price_tolerance is None else price_tolerance
-        )
-        self.volume_tolerance = float(
-            parameter_value("dq.cross_source_volume_tolerance")
-            if volume_tolerance is None else volume_tolerance
-        )
+        self.price_tolerance = 0.0 if price_tolerance is None else float(price_tolerance)
+        self.volume_tolerance = 0.0 if volume_tolerance is None else float(volume_tolerance)
+        if self.price_tolerance < 0 or self.volume_tolerance < 0:
+            raise ValueError("reconciliation tolerances cannot be negative")
 
     def evaluate(
         self,
