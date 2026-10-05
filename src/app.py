@@ -71,7 +71,7 @@ st.caption("Decision support only. Startup performs a governed source sync check
 force_refresh=st.sidebar.button("Refresh now", help="Force a governed provider recheck")
 sync_indicator = st.empty()
 sync_indicator.info("SYNCING — checking admitted providers and accepted cache…")
-sync=run_startup_sync(DATA_DIR, force=force_refresh)
+sync=run_startup_sync(force=force_refresh)
 sync_indicator.empty()
 display_sync_state(sync)
 # Defensive fallback for future orchestrator statuses not yet mapped above.
