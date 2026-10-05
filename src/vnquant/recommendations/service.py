@@ -1,6 +1,6 @@
 """Fail-closed, execution-aware recommendation construction.
 
-The service creates an *instruction for a future attempt*, never a fill.  A fill
+The service creates an *instruction for a future attempt*, never a fill. A fill
 belongs to execution/audit data and can only be established from the attempt
 session (or finer) observations.
 """
@@ -51,6 +51,7 @@ class RecommendationRequest:
     # Optional attempt-session bar is evidence for feasibility, not permission
     # to record a fill in this recommendation contract.
     attempt_bar: Mapping[str, float] | None = None
+    independent_validation_status: str = "WARNING"
 
 
 @dataclass(frozen=True)
@@ -76,19 +77,26 @@ def build_recommendation(request: RecommendationRequest,
                          portfolio: PortfolioContext) -> RecommendationResult:
     """Build a recommendation only when data, strategy, risk and execution pass.
 
-    Prices are VND.  The entry price used for planning is the tick-valid upper
+    Prices are VND. The entry price used for planning is the tick-valid upper
     limit of the entry zone; it is explicitly labelled ``planned_entry_limit``
     and is never represented as an actual or assumed fill.
     """
     required_text = (request.symbol, request.setup, request.entry_trigger,
                      request.invalidation, request.forecast_status,
-                     request.dq_status, request.sector, request.correlated_group)
+                     request.dq_status, request.sector, request.correlated_group,
+                     request.independent_validation_status)
     if any(not str(value).strip() for value in required_text):
         return RecommendationResult(NO_ACTIONABLE_RECOMMENDATION, "REQUIRED_DATA_MISSING", None)
     if not request.source_lineage or not all(
             request.source_lineage.get(key) for key in
             ("provider", "snapshot_id", "canonical_revision", "ingested_at")):
         return RecommendationResult(NO_ACTIONABLE_RECOMMENDATION, "SOURCE_LINEAGE_INCOMPLETE", None)
+    if request.independent_validation_status.upper() in {"QUARANTINED", "UNAVAILABLE"}:
+        return RecommendationResult(
+            NO_ACTIONABLE_RECOMMENDATION,
+            "INDEPENDENT_DATA_VALIDATION_FAILED",
+            None,
+        )
     if not request.dq_actionable or request.dq_status != "PASS":
         return RecommendationResult(NO_ACTIONABLE_RECOMMENDATION, "DQ_GATE_FAILED", None)
     if not request.strategy_validated:
@@ -183,6 +191,7 @@ def build_recommendation(request: RecommendationRequest,
         "position_size": {"nav_fraction": decision.notional / portfolio.account_equity},
         "execution_feasibility": execution_status, "confidence": request.confidence,
         "forecast_status": request.forecast_status, "dq_status": request.dq_status,
+        "independent_validation_status": request.independent_validation_status,
         "source_lineage": dict(request.source_lineage),
         "regulatory_sellable_date": sellable.isoformat(),
         "policy_earliest_exit_fill_date": earliest_exit.isoformat(),
