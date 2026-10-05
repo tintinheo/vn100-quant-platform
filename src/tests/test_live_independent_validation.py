@@ -22,7 +22,7 @@ class _FixtureProvider(MarketDataProvider):
     data_mode = DataMode.REAL
 
     def __init__(self, *, close=10.5, fail=False, raw_price_unit="VND"):
-        self.close = close
+        self.close_price = close
         self.fail = fail
         self.raw_price_unit = raw_price_unit
         self.daily_calls = 0
@@ -57,7 +57,7 @@ class _FixtureProvider(MarketDataProvider):
                 "open": 10.0,
                 "high": 11.0,
                 "low": 9.0,
-                "close": self.close,
+                "close": self.close_price,
                 "volume": 100,
                 "value": 1050.0,
             }],
