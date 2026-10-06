@@ -19,7 +19,8 @@ def request(**overrides):
         source_lineage={"provider": "fixture", "snapshot_id": "snap-1",
                         "canonical_revision": "rev-1", "ingested_at": "2026-01-05T10:00:00Z"},
         sector="BANK", correlated_group="BANK", adv_shares=1_000_000,
-        maximum_gap=.02, regime="STRONG_BULL")
+        maximum_gap=.02, regime="STRONG_BULL",
+        independent_validation_status="VERIFIED")
     values.update(overrides)
     return RecommendationRequest(**values)
 
@@ -37,13 +38,14 @@ def test_complete_contract_is_future_attempt_not_signal_close_fill():
                 "technical_stop", "risk_stop", "invalidation", "targets",
                 "expected_reward_to_risk", "expected_value", "position_size",
                 "execution_feasibility", "confidence", "forecast_status", "dq_status",
-                "source_lineage"}
+                "independent_validation_status", "source_lineage"}
     assert expected <= rec.keys()
     assert rec["attempt_date"] != rec["signal_date"]
     assert rec["fill_price"] is None
     assert rec["planned_entry_limit"] == 50_500
     assert rec["position_size"]["nav_fraction"] > 0
     assert rec["confidence"] == 82
+    assert rec["independent_validation_status"] == "VERIFIED"
 
 
 def test_attempt_evidence_applies_gap_and_conservative_touch_gate_without_fill_claim():
@@ -57,6 +59,8 @@ def test_attempt_evidence_applies_gap_and_conservative_touch_gate_without_fill_c
 def test_every_data_strategy_forecast_and_dq_gate_fails_closed():
     cases = [
         (dict(source_lineage={}), "SOURCE_LINEAGE_INCOMPLETE"),
+        (dict(independent_validation_status="QUARANTINED"), "INDEPENDENT_DATA_VALIDATION_FAILED"),
+        (dict(independent_validation_status="UNAVAILABLE"), "INDEPENDENT_DATA_VALIDATION_FAILED"),
         (dict(dq_status="DEGRADED"), "DQ_GATE_FAILED"),
         (dict(strategy_validated=False), "STRATEGY_GATE_FAILED"),
         (dict(forecast_status="FORECAST_UNAVAILABLE"), "FORECAST_GATE_FAILED"),

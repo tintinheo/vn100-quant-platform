@@ -1,0 +1,37 @@
+name: P0 Independent Data Validation
+
+on:
+  push:
+    branches:
+      - codex/p0-independent-data-validation
+      - codex/p0-1b-live-independent-validation
+  pull_request:
+    paths:
+      - "src/vnquant/data/reconciliation.py"
+      - "src/vnquant/data/reconciliation_frame.py"
+      - "src/vnquant/data/live_validation.py"
+      - "src/vnquant/config/provider_origins.py"
+      - "src/vnquant/config/provider_origins.v1.yaml"
+      - "src/app.py"
+      - "src/tests/test_independent_validation.py"
+      - "src/tests/test_live_independent_validation.py"
+      - "src/tests/test_recommendation_service.py"
+      - ".github/workflows/p0-independent-validation.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test,local]"
+      - name: Compile
+        run: python -m compileall -q src/vnquant src/app.py
+      - name: P0 independent-validation tests
+        run: python -m pytest -q src/tests/test_independent_validation.py src/tests/test_live_independent_validation.py src/tests/test_quality.py src/tests/test_source_sync.py src/tests/test_recommendation_service.py src/tests/test_ui_status.py
+      - name: Full regression suite
+        run: python -m pytest -q
