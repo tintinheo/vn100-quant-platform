@@ -10,7 +10,14 @@ from typing import Any, Protocol
 import pandas as pd
 
 from ..base import DataMode, MarketDataProvider, ProviderFetch
-from .common import ProviderConfigurationError, ProviderResponseError, canonical_frame, unix_seconds
+from .common import (
+    DataProviderErrorCode,
+    ProviderConfigurationError,
+    ProviderResponseError,
+    canonical_frame,
+    decode_provider_json_response,
+    unix_seconds,
+)
 from vnquant.config import parameter_value
 
 
@@ -47,8 +54,6 @@ class DNSECredentialSource:
             try:
                 return getter(reference)
             except (FileNotFoundError, KeyError):
-                # An unconfigured approved store is equivalent to a missing
-                # credential. Never expose its key name or underlying details.
                 return None
 
         api_key = value(self.api_key_reference)
@@ -60,10 +65,6 @@ class DNSECredentialSource:
         return DNSECredentials(str(api_key), str(api_secret))
 
 
-# [GUESS] Live DNSE resolution, accepted VN100 index-name literal, response
-# schema, units, available history depth, and quota/rate-limit behavior remain
-# unverified. The request/schema/unit assumptions used here are injectable; the
-# adapter must not be admitted until each assumption has supporting evidence.
 DEFAULT_DNSE_FIELD_MAP = {
     "symbol": "symbol",
     "trading_date": "time",
@@ -82,7 +83,7 @@ class DNSEProvider(MarketDataProvider):
     capabilities = frozenset({"daily_ohlcv", "current_index_members", "index_daily_ohlct"})
     data_mode = DataMode.REAL
     read_only = True
-    adapter_version = "1"
+    adapter_version = "2"
     trust_tier = "candidate"
     raw_price_unit = "provider_native_[GUESS]"
     price_semantics = "raw_ohlc_[GUESS]"
@@ -96,7 +97,7 @@ class DNSEProvider(MarketDataProvider):
         now: Callable[[], datetime] | None = None,
         resolution: str | None = None,
         index_name: str | None = None,
-        field_map: Mapping[str, str] = DEFAULT_DNSE_FIELD_MAP,  # [GUESS]
+        field_map: Mapping[str, str] = DEFAULT_DNSE_FIELD_MAP,
         price_multiplier: float | None = None,
     ) -> None:
         self._client = client
@@ -120,57 +121,97 @@ class DNSEProvider(MarketDataProvider):
             self._client = self._client_factory(self._credential_source.resolve())
         return self._client
 
-    @staticmethod
-    def _records(response: Any) -> list[Mapping[str, Any]]:
-        payload = response.json() if callable(getattr(response, "json", None)) else response
-        # [GUESS] Accepted live envelope names must be replaced/confirmed from captured evidence.
+    @classmethod
+    def _decode(cls, response: Any) -> Any:
+        return decode_provider_json_response(response, provider_id=cls.provider_id)
+
+    @classmethod
+    def _records(cls, response: Any) -> list[Mapping[str, Any]]:
+        payload = cls._decode(response)
         if isinstance(payload, Mapping):
             payload = payload.get("data", payload.get("items", payload.get("records")))
         if not isinstance(payload, list) or not all(isinstance(x, Mapping) for x in payload):
-            raise ProviderResponseError("unverified DNSE response does not contain a record list")
+            raise ProviderResponseError(
+                "unverified DNSE response does not contain a record list",
+                code=DataProviderErrorCode.SCHEMA_ERROR,
+                provider_id=cls.provider_id,
+            )
         return payload
+
+    def _provider_fetch(self, response: Any, parameters: Mapping[str, Any], source_reference: str,
+                        raw_price_unit: str, price_semantics: str) -> ProviderFetch:
+        payload = self._decode(response)
+        if not isinstance(payload, (Mapping, list)):
+            raise ProviderResponseError(
+                "DNSE JSON root is not an object or record list",
+                code=DataProviderErrorCode.SCHEMA_ERROR,
+                provider_id=self.provider_id,
+            )
+        return ProviderFetch(
+            self.provider_id,
+            json.dumps(payload, sort_keys=True, default=str).encode(),
+            self._now(),
+            dict(parameters),
+            self.adapter_version,
+            source_reference,
+            self.trust_tier,
+            raw_price_unit,
+            price_semantics,
+        )
 
     def fetch_current_index_members(self, index_code: str = "VN100") -> ProviderFetch:
         parameters = {"index_name": index_code or self.index_name, "limit": 100, "page": 1,
                       "dry_run": False}
-        response = self.client.get_instruments(
-            **parameters
+        response = self.client.get_instruments(**parameters)
+        return self._provider_fetch(
+            response,
+            parameters,
+            "GET /instruments",
+            "not_applicable",
+            "universe_membership",
         )
-        payload = response.json() if callable(getattr(response, "json", None)) else response
-        return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
-            self._now(), parameters, self.adapter_version, "GET /instruments",
-            self.trust_tier, "not_applicable", "universe_membership")
 
     def normalize_index_members(self, fetched: ProviderFetch) -> list[str]:
         records = self._records(json.loads(fetched.payload))
         symbols = [str(row.get("symbol", "")).strip().upper() for row in records]
         if not symbols or any(not symbol for symbol in symbols):
-            raise ProviderResponseError("DNSE instrument response has no complete symbol list")
+            raise ProviderResponseError(
+                "DNSE instrument response has no complete symbol list",
+                code=DataProviderErrorCode.SCHEMA_ERROR,
+                provider_id=self.provider_id,
+            )
         return sorted(set(symbols))
 
     def fetch_daily_history(self, symbol: str, start: date, end: date) -> ProviderFetch:
         parameters = {"bar_type": "STOCK", "query": {"symbol": symbol.upper(),
             "resolution": self.resolution, "from": unix_seconds(start), "to": unix_seconds(end)},
             "dry_run": False}
-        response = self.client.get_ohlc(
-            **parameters,
+        response = self.client.get_ohlc(**parameters)
+        return self._provider_fetch(
+            response,
+            parameters,
+            "GET /price/ohlc",
+            self.raw_price_unit,
+            self.price_semantics,
         )
-        payload = response.json() if callable(getattr(response, "json", None)) else response
-        return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
-            self._now(), parameters, self.adapter_version, "GET /price/ohlc",
-            self.trust_tier, self.raw_price_unit, self.price_semantics)
 
     def normalize_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
         symbol = str(fetched.request_parameters["query"]["symbol"])
         records = [dict(row, symbol=row.get("symbol", symbol)) for row in self._records(json.loads(fetched.payload))]
         date_field = self.field_map.get("trading_date")
-        # [GUESS] The default schema treats numeric timestamps as Unix seconds.
         if date_field:
-            for record in records:
-                if isinstance(record.get(date_field), (int, float)):
-                    record[date_field] = pd.to_datetime(
-                        record[date_field], unit="s", utc=True, errors="raise"
-                    ).date()
+            try:
+                for record in records:
+                    if isinstance(record.get(date_field), (int, float)):
+                        record[date_field] = pd.to_datetime(
+                            record[date_field], unit="s", utc=True, errors="raise"
+                        ).date()
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ProviderResponseError(
+                    "DNSE trading-date field cannot be normalized",
+                    code=DataProviderErrorCode.SCHEMA_ERROR,
+                    provider_id=self.provider_id,
+                ) from exc
         return canonical_frame(
             records,
             field_map=self.field_map,
@@ -179,21 +220,28 @@ class DNSEProvider(MarketDataProvider):
         )
 
     def fetch_index_daily_history(self, index_code: str, start: date, end: date) -> ProviderFetch:
-        # [GUESS] DNSE's live index bar_type and VNINDEX literal require doctor/cross-validation evidence.
         parameters = {"bar_type": "INDEX", "query": {"symbol": index_code.upper(),
             "resolution": self.resolution, "from": unix_seconds(start), "to": unix_seconds(end)},
             "dry_run": False}
         response = self.client.get_ohlc(**parameters)
-        payload = response.json() if callable(getattr(response, "json", None)) else response
-        return ProviderFetch(self.provider_id, json.dumps(payload, sort_keys=True, default=str).encode(),
-            self._now(), parameters, self.adapter_version, "GET /price/ohlc",
-            self.trust_tier, self.raw_price_unit, "official_index_raw_ohlc_[GUESS]")
+        return self._provider_fetch(
+            response,
+            parameters,
+            "GET /price/ohlc",
+            self.raw_price_unit,
+            "official_index_raw_ohlc_[GUESS]",
+        )
 
     def normalize_index_daily_history(self, fetched: ProviderFetch) -> pd.DataFrame:
         frame = self.normalize_daily_history(fetched)
-        # [GUESS] ``value`` is the injectable/default turnover field; absent data
-        # remains null and can never confirm a bull regime.
         records = self._records(json.loads(fetched.payload))
         if records and all("value" in record for record in records):
-            frame["value"] = pd.to_numeric([record["value"] for record in records], errors="raise")
+            try:
+                frame["value"] = pd.to_numeric([record["value"] for record in records], errors="raise")
+            except (TypeError, ValueError) as exc:
+                raise ProviderResponseError(
+                    "DNSE index turnover field cannot be normalized",
+                    code=DataProviderErrorCode.SCHEMA_ERROR,
+                    provider_id=self.provider_id,
+                ) from exc
         return frame.rename(columns={"symbol": "index_code", "value": "turnover"})
